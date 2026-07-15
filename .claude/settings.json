@@ -305,6 +305,7 @@
   "outputStyle": "MoAI",
   "showThinkingSummaries": false,
   "cleanupPeriodDays": 30,
+  "//": "(주의) 아래 env.PATH는 이 머신(C:\\Users\\sdok1) 전용 절대경로입니다. 다른 머신에 클론했다면 nodejs/npm 전역 경로와 moai 설치 경로를 반드시 로컬 환경에 맞게 수정하세요. PATH에 nodejs가 빠지면 npx가 exit 127로 죽어 ccstatusline 상태줄이 안 뜨고, moai 훅들이 조용히 no-op 됩니다. JSON은 주석을 지원하지 않아 이 '//' 키로 대신합니다 — 삭제하지 마세요.",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "64000",
@@ -542,8 +543,8 @@
     ]
   },
   "attribution": {
-    "commit": "\ud83d\uddff MoAI <email@mo.ai.kr>",
-    "pr": "\ud83d\uddff MoAI <email@mo.ai.kr>"
+    "commit": "🗿 MoAI <email@mo.ai.kr>",
+    "pr": "🗿 MoAI <email@mo.ai.kr>"
   },
   "enableAllProjectMcpServers": false,
   "respectGitignore": true,
