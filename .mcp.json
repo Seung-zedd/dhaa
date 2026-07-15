@@ -6,11 +6,20 @@
       "headers": {
         "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "moai-lsp": {
+      "$comment": "LSP code intelligence via moai binary (goto definition, find references, hover, diagnostics, rename). Uses absolute path: Claude Code spawns stdio MCP servers via cmd /c whose PATH may not include the moai install dir (bash-only PATH entry), causing 'moai is not recognized' -32000 failures. Adjust the path to your machine's moai install location.",
+      "command": "C:\\Users\\sdok1\\AppData\\Local\\Programs\\moai\\moai.exe",
+      "args": [
+        "mcp",
+        "lsp"
+      ],
+      "timeout": 30000
     }
   },
   "staggeredStartup": {
     "enabled": true,
     "delayMs": 500,
-    "connectionTimeout": 15000
+    "connectionTimeout": 30000
   }
 }
