@@ -226,6 +226,7 @@ dist-ssr/
 /scratchpad/
 /.agents/
 /.opencode/
+/.serena/
 run-headroom.bat
 pip_check.py
 prevent-supply-chain-attack-gemini.md

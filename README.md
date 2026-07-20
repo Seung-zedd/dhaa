@@ -49,9 +49,23 @@ git clone git@github.com:Seung-zedd/general-moai-adk.git projects
 cd projects
 ```
 
-### 2. GitHub MCP 토큰 설정
+### 2. MCP 서버 설정
 
-`.mcp.json`이 `${GITHUB_PERSONAL_ACCESS_TOKEN}` 환경변수를 참조합니다. 셸 프로필 또는 시스템 환경변수에 GitHub PAT를 등록하세요.
+이 컨테이너가 실제로 사용하는 MCP 서버는 두 종류로 나뉩니다. **프로젝트 스코프**만 레포에 committed되고(`.mcp.json`), 나머지는 머신 종속(절대경로)이거나 계정 종속이라 committed하지 않습니다 — 클론 후 각자 `claude mcp add`로 설치하세요. 현재 상태는 `claude mcp list`로 확인합니다.
+
+| 서버 | 스코프 | 전송 | 용도 | 설치 / 인증 |
+|------|--------|------|------|-------------|
+| **github** | 프로젝트 (`.mcp.json`) | HTTP (readonly) | 레포/이슈/PR 읽기 | `${GITHUB_PERSONAL_ACCESS_TOKEN}` 환경변수 등록. 쓰기 작업은 읽기 전용 엔드포인트라 `gh` CLI 사용 |
+| **context7** | user | HTTP | 최신 라이브러리 문서 조회 | `claude mcp add --transport http context7 https://mcp.context7.com/mcp` (API 키 불필요) |
+| **serena** | user | stdio | LSP 심볼 검색·편집 | `uv`/`uvx` 설치 후 `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@v1.5.3 serena start-mcp-server --project-from-cwd --context claude-code` |
+| **headroom** | user | stdio | 컨텍스트 압축 | `headroom` 패키지 설치 후 `claude mcp add headroom -- headroom mcp serve` |
+| **pencil** | user | stdio | UI 디자인(.pen) 편집 | Pencil 데스크탑 앱 설치 후, 앱의 `mcp-server` 실행파일 경로로 `claude mcp add` (경로는 머신마다 다름) |
+| **vercel** | plugin | HTTP | Vercel 배포·문서 | Claude Code 플러그인(`plugin:vercel:vercel`)으로 설치, `https://mcp.vercel.com` |
+| **claude.ai** (Gmail/Calendar/Drive/Linear) | account | HTTP | Google/Linear 연동 | Claude 계정에 연결된 커넥터 — 세션 안에서 `/mcp`로 인증 |
+
+- stdio 서버(serena/headroom/pencil)의 실행 경로는 **본인 머신의 설치 경로에 맞게** 지정하세요. 위 명령은 예시이며, 정확한 값은 원본 머신의 `claude mcp list` 출력을 참고합니다.
+- 프로젝트 스코프 서버 활성화는 `.claude/settings.local.json`의 `enabledMcpjsonServers`로 제어됩니다(비추적, 머신 로컬).
+- 예전에 시도했던 `moai-lsp`는 미동작으로 `.mcp.json`에서 제거되었습니다 — `enabledMcpjsonServers`에 잔여 참조가 있으면 정리하세요.
 
 ### 3. ⚠️ `.claude/settings.json`의 `env.PATH` 수정 (필수)
 
