@@ -188,6 +188,10 @@ secret-*.*
 # ===========================================
 .moai/evolution/telemetry/*.jsonl
 !.moai/evolution/telemetry/.gitkeep
+# Runtime telemetry appended by observe hooks (harness config files
+# such as main.md / plan-extension.md stay tracked).
+.moai/harness/usage-log.jsonl
+.moai/lessons-inbox.jsonl
 
 # ===========================================
 # Node.js (for docs/Nextra)
@@ -222,6 +226,7 @@ dist-ssr/
 /clawd-on-desk/
 /headroom/
 /moai-omok-test/
+/prep-tech-interview-with-gamification/
 /tools/
 /scratchpad/
 /.agents/
