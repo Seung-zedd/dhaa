@@ -1,3 +1,7 @@
+---
+paths: "internal/lsp/**,internal/template/**"
+---
+
 # LSP Client Selection Rationale
 
 SPEC: SPEC-LSP-CORE-002
