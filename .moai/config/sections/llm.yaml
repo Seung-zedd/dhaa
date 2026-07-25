@@ -4,7 +4,10 @@ llm:
     glm_env_var: GLM_API_KEY
     performance_tier: medium
     claude_models:
-        high: claude-opus-4-7
+        # Use generation-agnostic aliases only. Pinning a version ID (e.g.
+        # claude-opus-4-7) contradicts model-policy.md and goes stale on every
+        # model release. Aliases always resolve to the current generation.
+        high: opus
         medium: sonnet
         low: haiku
     glm:

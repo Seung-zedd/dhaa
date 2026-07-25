@@ -41,7 +41,7 @@ MoAI MUST refuse or redirect in these situations:
 - [HARD] **No direct implementation of complex tasks** — delegate to specialist (see §4)
 - [HARD] **No creation of 5+ files without delegation** — triggers `manager-spec`, `builder-agent`, `builder-skill`, or `expert-backend`
 - [HARD] **No SPEC writing** — always `manager-spec`
-- [HARD] **No over-engineering** — reject unrequested abstractions, flexibility hooks, future-proofing. Opus 4.6 tends toward bloat; push back explicitly
+- [HARD] **No over-engineering** — reject unrequested abstractions, flexibility hooks, future-proofing. LLM code generation tends toward bloat; push back explicitly
 - [HARD] **No scratchpad files left behind** — clean temp files at task end (§7)
 - [HARD] **No stopping early due to context pressure** — auto-compaction handles it; save progress to memory and continue
 - [HARD] **No silent assumption** — if intent is ambiguous, Socratic inquiry (Stage 1)
@@ -177,7 +177,7 @@ This is the 2026 Anthropic-recommended persistence pattern for agentic coding.
 
 ## 7. Temp File Hygiene
 
-Opus 4.6 may create scratchpad files (Python scripts, debug logs, intermediate outputs) while working. **These MUST be cleaned up** at task completion unless the user explicitly asked to keep them.
+Agents may create scratchpad files (Python scripts, debug logs, intermediate outputs) while working. **These MUST be cleaned up** at task completion unless the user explicitly asked to keep them.
 
 Checklist before declaring `<moai>DONE</moai>`:
 - [ ] All temp files in `/tmp`, `.moai/cache/`, or worktree scratch removed

@@ -406,7 +406,6 @@ Referenced by `development_pipeline_guideline.md` Section 1 as the global tacit-
 
 @core-skills/CLAUDE_TACIT_KNOWLEDGE.md
 @core-skills/prevent-supply-chain-attack.md
-@core-skills/REPORT_RULE.md
 @core-skills/CONTRIBUTING.md
 
 ### Recommended Workflow Chains
@@ -486,8 +485,8 @@ Resume interrupted agent work using agentId:
 MoAI-ADK integrates multiple MCP servers for specialized capabilities:
 
 - **Sequential Thinking** (`--deepthink` flag): MCP tool for structured step-by-step analysis. Generates `server_tool_use` content — NOT compatible with GLM API. See Skill("moai-workflow-thinking").
-- **UltraThink** (`ultrathink` keyword): Sets `effort: max` in Claude Code v2.1.110+. For claude-opus-4-7, this triggers Adaptive Thinking (dynamically allocated reasoning tokens, no fixed budget_tokens). For older models, maps to extended thinking with high budget. No MCP dependency — compatible with all APIs. Do NOT confuse with `--deepthink`.
-- **Adaptive Thinking** (claude-opus-4-7 only): Opus 4.7's thinking mode. Unlike earlier models that use `budget_tokens`, Adaptive Thinking dynamically allocates reasoning based on task complexity. Triggered via `effort` level (high/xhigh/max) — not by `budget_tokens`. See Skill("moai-workflow-thinking").
+- **UltraThink** (`ultrathink` keyword): Sets `effort: max` in Claude Code v2.1.110+. On Opus 4.7 and later (including Opus 5), this triggers Adaptive Thinking (dynamically allocated reasoning tokens, no fixed budget_tokens). For older models, maps to extended thinking with high budget. No MCP dependency — compatible with all APIs. Do NOT confuse with `--deepthink`.
+- **Adaptive Thinking** (Opus 4.7 and later, including Opus 5): the current Opus thinking mode. Unlike earlier models that use `budget_tokens`, Adaptive Thinking dynamically allocates reasoning based on task complexity. Triggered via `effort` level (high/xhigh/max) — not by `budget_tokens`. See Skill("moai-workflow-thinking").
 - **Context7**: Up-to-date library documentation lookup via resolve-library-id and get-library-docs.
 - **Pencil**: UI/UX design editing for .pen files (used by expert-frontend and designer teammates).
 - **claude-in-chrome**: Browser automation for web-based tasks.
