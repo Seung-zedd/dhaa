@@ -46,6 +46,17 @@
           }
         ],
         "matcher": "Write|Edit|Bash"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/moai/pkg-add-guard.sh\"",
+            "timeout": 30,
+            "type": "command",
+            "statusMessage": "Checking new package(s) against supply-chain guard..."
+          }
+        ]
       }
     ],
     "PostToolUse": [
