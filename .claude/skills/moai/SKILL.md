@@ -138,7 +138,7 @@ For detailed orchestration: Read ${CLAUDE_SKILL_DIR}/workflows/gate.md
 Purpose: Dedicated security audit with OWASP Top 10 analysis, dependency scanning, secrets detection, and data isolation checks.
 Agents: expert-security (primary)
 Flags: --full, --deps, --secrets, --file PATH, --branch BRANCH
-For detailed orchestration: Read /Users/goos/MoAI/moai-adk-go/.claude/skills/moai/workflows/security.md
+For detailed orchestration: Read ${CLAUDE_SKILL_DIR}/workflows/security.md
 
 ### fix - Auto-Fix Errors
 
