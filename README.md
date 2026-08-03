@@ -18,7 +18,8 @@
 projects/                        ← 이 레포 (컨테이너)
 ├── CLAUDE.md                    # MoAI 오케스트레이터 지시문 (상속됨)
 ├── development_pipeline_guideline.md  # 에이전틱 개발 파이프라인 가이드
-├── core-skills/                 # 글로벌 암묵지 룰셋 (CLAUDE.md가 @import)
+├── core-skills/                 # 글로벌 암묵지 룰셋 (온디맨드 — CLAUDE.md 12절 인덱스 참조)
+├── docs/                        # claude-md-coverage-map.md (재구조화 감사 기록, 세션 미로드)
 ├── .claude/                     # 엔진: agents/skills/commands/rules/hooks/output-styles
 │   └── settings.json            # ⚠️ env.PATH가 머신 종속 — 아래 셋업 3번 참조
 ├── .moai/                       # 컨테이너 레벨 config (config/sections, project/brand 등)
@@ -120,6 +121,14 @@ moai cc
 ## 주의사항
 
 - **`moai update`는 반드시 이 컨테이너 루트에서만** 실행 — 앱에서 실행하면 템플릿이 다시 밀려들어와 중복 제거·statusLine 고정을 재수행해야 합니다.
+- **⚠️ `moai update` 실행 직후 `CLAUDE.md` 크기를 반드시 확인** — 이 레포의 `CLAUDE.md`는 컨텍스트 절감을 위해 기본 720줄 템플릿에서 440줄로 재구조화되어 있습니다(`@import` 5개를 온디맨드 인덱스로 강등 + 자동 로드 rules와의 중복 제거). `moai update`와 `moai init`은 720줄 템플릿을 그대로 덮어씁니다.
+
+  ```bash
+  wc -l CLAUDE.md          # 470줄 초과 = 템플릿 미러가 돌아온 것
+  git checkout CLAUDE.md   # 복구
+  ```
+
+  덮어써진 채로 두면 **모든 앱 폴더의 모든 세션**이 매번 약 36 KB를 추가로 로드합니다. 무엇을 어디로 옮겼는지에 대한 섹션별 감사 기록은 `docs/claude-md-coverage-map.md`에 있습니다.
 - **앱 폴더는 각자 독립 git 레포**로 관리 — 이 컨테이너 레포에는 절대 추적되지 않습니다 (`.gitignore` 참조). 새 앱 폴더를 만들면 exclusions 섹션에 폴더명을 추가하세요.
 - **상태줄이 안 뜰 때 진단 순서**: ① 세션 재시작(1순위 원인) → ② `settings.json`의 `statusLine.command`가 `npx -y ccstatusline@latest`인지 확인 → ③ `env.PATH`에 nodejs 포함 여부(셋업 3번) → ④ `~/.config/ccstatusline/` 전역 설정 충돌.
 - **패키지 설치 전** `pkg-supply-chain-check.sh`로 공급망 검사: `bash pkg-supply-chain-check.sh <package> [version]`
