@@ -1,6 +1,7 @@
 ---
 description: Worktree integration guide with path isolation rules for agents using isolation worktree
 globs: "**/.claude/agents/**,**/.claude/worktrees/**"
+paths: "**/.claude/agents/**,**/.claude/worktrees/**,**/.claude/rules/moai/workflow/**"
 ---
 
 # Worktree Integration Guide

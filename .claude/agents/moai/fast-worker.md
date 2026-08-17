@@ -20,6 +20,15 @@ permissionMode: acceptEdits
 
 Execute mechanical, low-ambiguity implementation work quickly and reliably without introducing design judgement calls.
 
+## Execution Backend
+
+The backend is chosen when the Claude Code process launches, NOT by this file. The `model:` frontmatter key accepts only Anthropic model names, so it cannot select GLM. Routing preference:
+
+1. **GLM first** - run mechanical work in a session launched with `moai glm` (all-GLM) or as a `moai cg` teammate pane. Every agent in that session, including this one, resolves to a GLM model through the Z.AI Anthropic-compatible endpoint; the `model: sonnet` frontmatter is mapped by the provider and needs no change.
+2. **Sonnet as the fallback** - under a Claude backend, `model: sonnet` applies as written. Use this when no GLM session is available, when the task turns out to need stronger reasoning, or when Z.AI concurrency limits (paid tiers observe 1-3 in-flight requests) would serialize the work anyway.
+
+Never claim a task ran on GLM without knowing which session it executed in - the orchestrator, not this agent, owns that routing decision.
+
 ## Core Capabilities
 
 - Boilerplate code generation from an already-decided pattern or template

@@ -1,3 +1,8 @@
+---
+description: Design system constitution — frozen zones, GAN loop contract, evaluator leniency prevention for the /moai design pipeline
+paths: ".moai/design/**,.moai/project/brand/**,.moai/sprints/**,.moai/research/**,.claude/rules/moai/design/**"
+---
+
 # Design System Constitution v3.2
 
 ## HISTORY

@@ -13,7 +13,7 @@ We use a structured branching model to separate development from production.
 | Branch          | Role            | Description                                                                                                                                             |
 | :-------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **`main`**      | **Production**  | 🛡️ **The Sanctuary.** Contains only stable, deployable code. Direct pushes are forbidden. Merges happen only via Pull Requests from `dev` for releases. |
-| **`dev`**       | **Staging**     | 🔧 **Integration Hub.** The active development branch. All feature branches merge here for integration testing.                                         |
+| **`dev`**(useful after launching MVP product)       | **Staging**     | 🔧 **Integration Hub.** The active development branch. All feature branches merge here for integration testing.                                         |
 | **`feature/*`** | **Development** | ✨ **Workspace.** Dedicated branches for specific features or fixes (e.g., `feature/login-auth`).                                                       |
 
 ---

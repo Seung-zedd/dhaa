@@ -61,7 +61,7 @@ inject is the routing judgment:
 6. Cross-cutting heavy reasoning with no single domain owner (architecture, complex
    debugging, algorithm design) → `deep-reasoner` (opus, effort high)
 7. Mechanical, low-ambiguity execution (boilerplate, formatting, repetitive scaffolding,
-   mechanical test writing) → `fast-worker` (sonnet, effort high)
+   mechanical test writing) → `fast-worker` (GLM session first, Sonnet fallback; effort high)
 
 Builder agents: `builder-{agent|skill|plugin}`. Evaluators: `evaluator-active` (4-dimension
 skeptical scoring), `plan-auditor` (plan-phase document audit).
@@ -263,6 +263,17 @@ implementation-heavy work.
 Use for: implementation-heavy run phases, code generation, test writing, docs generation.
 Do NOT use for: planning/architecture, security reviews, complex debugging — those need
 Claude reasoning.
+
+**Mechanical work routes to GLM first, Sonnet second.** The backend is process-level, not
+per-agent: `model:` frontmatter cannot name GLM, and every agent inside a `moai glm` session
+or a `moai cg` teammate pane is already GLM. So "route to GLM" means *run it in that session*;
+Sonnet (`fast-worker`, or `model: "sonnet"`) is the fallback when no GLM session is up, when
+the task turns out to need stronger reasoning, or when Z.AI concurrency (1-3 in-flight on paid
+tiers) would serialize the work anyway.
+
+`moai glm` needs no tmux and is the entry point where tmux is unavailable (Windows native).
+It `exec`s claude with its own `ANTHROPIC_BASE_URL`, so it **cannot be combined with a headroom
+wrapper** — launched under `head claude` the GLM env wins and headroom is silently bypassed.
 
 ---
 
