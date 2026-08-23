@@ -11,3 +11,19 @@
 
 ## 4. update docs:
 `/moai codemaps → /moai sync`
+
+## 5. security audit:
+`/moai security → (fix: /moai run SPEC-XXX if structural, direct edit if a one-liner) → /moai review --security → /moai sync`
+
+Run before a release, and after touching auth, payment, user-data boundaries, or dependencies.
+
+**`/moai security` cannot be typed as a slash command.** moai-adk 3.1.2 ships no
+`commands/moai/security.md` — verified against the binary's embedded command templates — so
+the `/moai` menu never offers it, and typing it does nothing. The workflow itself is intact
+(`.claude/skills/moai/workflows/security.md`); invoke it in natural language and the moai
+skill routes security / audit / owasp / vulnerability / injection / xss / csrf to it.
+Aliases: `audit`, `sec`.
+
+Do not substitute one for the other:
+- `/moai review --security` — one lens inside a general code review, scoped to the diff
+- `/moai security` — dedicated pass: OWASP Top 10, dependency scan, secrets detection, data isolation (expert-security)
