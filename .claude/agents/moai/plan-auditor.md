@@ -207,6 +207,25 @@ Execute each check in order. Mark each item PASS, FAIL, or N/A with evidence.
 - CD-3: Cross-document terminology and command consistency across spec.md, acceptance.md, plan.md, spec-compact.md — tool names, package-manager commands (e.g., npm vs pnpm class drift), env var names, endpoint paths, version strings, numeric thresholds. Any divergence is a defect with both citations.
 - CD-4: Dependency-table integrity — every row of the "provides / consumed by" (dependency map) table in spec.md is backed by at least one REQ that actually delivers it, and no REQ delivers a cross-SPEC contract the table omits.
 - CD-5: spec-compact.md sync — the compact file contains no statement that contradicts or lags spec.md/acceptance.md (stale wording after a spec edit is a defect).
+
+### Group 8: PRD Cross-Validation (upstream product authority)
+
+`PRD.md` at the repository root is the upstream product authority: PRD → spec → acceptance → plan → code. A SPEC may not settle a product decision the PRD has not settled. Reading rules and the full routing table are in `.claude/rules/moai/workflow/spec-review-authority.md`.
+
+**Two-region rule (mechanically decidable).** Everything before the first `## **1.` heading is the `변경 요약` version-history block and is HISTORICAL — [HARD] never cite it as a current requirement; it routinely describes designs later dropped. Only the numbered body (sections 1 through 11) is CURRENT.
+
+**[HARD] Report a Group 8 defect ONLY when all four hold.** The PRD carries no machine-readable state markers — state lives in Korean prose (확정 / 채택 / 미채택 / 폐기 / 보류 / 이관 / post-MVP), and a single sentence often carries several states at once. Do not infer state; read it, and when it is not unambiguous, produce no finding.
+
+1. The PRD statement is in the CURRENT region
+2. Its state is unambiguously CONFIRMED or POST-MVP
+3. The SPEC conflict is direct, not inferred through a chain of reasoning
+4. The exact PRD section number can be cited
+
+- PD-1: PRD CONFIRMED ↔ SPEC contradiction — the SPEC requires the opposite of a settled product decision. Cite both.
+- PD-2: PRD POST-MVP item required by an MVP-scoped SPEC — scope violation. If the phase boundary itself is ambiguous, produce no finding.
+- PD-3: PRD CONFIRMED requirement absent from a SPEC that owns its scope — coverage gap. Only when scope ownership is explicit; overlapping or unclear ownership produces no finding.
+
+**[HARD] Never report these — they belong to spec-interrogator (Stage 2):** a PRD item whose state is DEFERRED, ambiguous, or absent; a SPEC that resolves an undecided PRD item; a SPEC introducing product-level behaviour the PRD does not mention. Those answers do not exist inside the documents, so they are judgment points, not mechanical defects. Listing them here would merge Stage 1 into Stage 2 and destroy the cross-check between them.
 <!-- LOCAL-EXT spec-review-pipeline END -->
 
 ## Output Format
@@ -278,6 +297,12 @@ Stagnation detection: If a defect appears in all three iterations unchanged, fla
 This agent receives one input: the absolute path to the SPEC directory (e.g., `.moai/specs/SPEC-AUTH-001/`).
 
 The agent reads `spec.md` as the primary input. It may also read `acceptance.md` and `plan.md` for cross-reference.
+
+<!-- LOCAL-EXT spec-review-pipeline BEGIN -->
+It also reads `spec-compact.md` (Group 7 CD-5 cannot be evaluated without it) and `PRD.md` at the repository root (Group 8).
+
+Reading `PRD.md` does NOT violate M1 Context Isolation. That rule bans SPEC-authoring reasoning, prior drafts and conversation history. `PRD.md` is an authoritative product artifact upstream of the SPEC, not an account of how the SPEC came to be written — the same distinction spec-interrogator applies.
+<!-- LOCAL-EXT spec-review-pipeline END -->
 
 If the caller passes additional context (author reasoning, prior conversation), the agent MUST ignore it and state: "Reasoning context ignored per M1 Context Isolation."
 
