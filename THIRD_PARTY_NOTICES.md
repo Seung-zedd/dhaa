@@ -11,7 +11,7 @@ DHAA itself is licensed under the [MIT License](LICENSE).
 | Project | License | Relationship to DHAA |
 |---|---|---|
 | [MoAI-ADK](https://github.com/modu-ai/moai-adk) | Apache License 2.0 | Current reference implementation and interoperability target |
-| Everything Claude Code (ECC) | MIT License | Interoperability and harness-agnostic experiment target |
+| [Everything Claude Code (ECC)](https://github.com/affaan-m/ECC) | MIT License | Interoperability and harness-agnostic experiment target |
 | [Oh My OpenAgent (OMO)](https://github.com/code-yeongyu/oh-my-openagent) | Sustainable Use License 1.0 | Interoperability and harness-agnostic experiment target |
 
 ## License Boundaries
