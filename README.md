@@ -1,125 +1,170 @@
-# general-moai-adk
+# DHAA
 
-특정 도메인에 종속되지 않는 **MoAI-ADK 워크스페이스 컨테이너**입니다. Claude Code 엔진(에이전트·스킬·룰·훅)을 컨테이너 레벨에 한 번만 설치하고, 개별 앱은 하위 폴더에서 **상속**받아 사용합니다. 이 구조로 앱마다 CLAUDE.md(~29K)가 중복 로드되는 context bloat을 원천 차단합니다.
+> **Experiment Stage**  
+> DHAA는 현재 개념과 구조를 검증하는 실험 단계입니다. 인터페이스, 디렉토리 구조, 지원 harness 및 agent 구성은 실험 결과에 따라 변경될 수 있습니다.
 
-## 핵심 개념: 2-레이어 상속 모델
+**DHAA = Domain, Harness & Agent-Agnostic**
+
+특정 애플리케이션 도메인, 특정 AI coding harness, 특정 agent 구현에 종속되지 않는 **agentic engineering workspace architecture**를 지향합니다.
+
+현재 레퍼런스 구현은 **Claude Code + MoAI-ADK** 조합을 사용하지만, DHAA의 목표는 이 구현 자체를 표준으로 고정하는 것이 아니라 개발 워크플로우와 운영 규칙을 상위 레이어로 분리해 다른 domain, harness, agent 조합으로도 재사용할 수 있게 만드는 것입니다.
+
+## 목표
+
+DHAA는 다음 세 가지 결합을 느슨하게 만드는 것을 목표로 합니다.
+
+- **Domain-agnostic** — PillWriter 같은 특정 제품이나 SaaS, XR, backend 등 하나의 문제 도메인에 종속되지 않음
+- **Harness-agnostic** — Claude Code에 고정되지 않고 다른 coding-agent harness로 교체 가능하도록 구조화
+- **Agent-agnostic** — 특정 planner, reviewer, worker agent나 특정 모델 구현에 종속되지 않도록 역할과 규칙을 분리
+
+현재 구현에서는 아직 Claude Code와 MoAI-ADK에 대한 결합이 존재합니다. 따라서 이 저장소는 완성된 agnostic framework가 아니라, 그 방향으로 구조를 일반화하고 결합도를 낮추는 과정을 검증하기 위한 **reference experiment**에 가깝습니다.
+
+## 현재 구현: 2-레이어 상속 모델
+
+현재 실험 환경에서는 Claude Code와 MoAI-ADK를 이용해 다음과 같은 2-layer workspace 모델을 사용합니다.
 
 | 레이어 | 상속 여부 | 내용 |
 |--------|-----------|------|
 | **Claude Code 레이어** | ✅ 하위 폴더로 자동 상속 | `CLAUDE.md`, `.claude/`(agents/skills/rules/hooks/commands), `/moai` 슬래시 명령 |
 | **`moai` 바이너리 레이어** | ❌ 로컬 `.moai/`만 인식 | `moai status`/`loop`/`fix`/quality gate — 앱마다 로컬 `.moai/` 필요 |
 
-- Claude Code는 디렉토리 트리를 **위로 탐색**하므로, 앱 하위 폴더에서 세션을 열면 이 컨테이너의 엔진이 전부 로드됩니다 (앱의 `.claude/`가 비어 있어도 됨).
-- `moai` 바이너리는 상속하지 않으므로 앱마다 `moai init`으로 로컬 `.moai/`만 확보합니다.
+- Claude Code는 디렉토리 트리를 **위로 탐색**하므로, 앱 하위 폴더에서 세션을 열면 이 workspace의 agentic engine 구성을 상속받습니다.
+- `moai` 바이너리는 상위 `.moai/`를 상속하지 않으므로 앱마다 `moai init`으로 로컬 `.moai/`를 확보합니다.
+- 이 구조를 이용해 앱마다 동일한 `CLAUDE.md`, agents, skills, rules를 중복 보유하면서 발생하는 context bloat을 줄이는 것을 실험하고 있습니다.
 
 ## 레포 구성
 
-```
-projects/                        ← 이 레포 (컨테이너)
-├── CLAUDE.md                    # MoAI 오케스트레이터 지시문 (상속됨)
-├── development_pipeline_guideline.md  # 에이전틱 개발 파이프라인 가이드
-├── core-skills/                 # 글로벌 암묵지 룰셋 (CLAUDE.md가 @import)
-├── .claude/                     # 엔진: agents/skills/commands/rules/hooks/output-styles
-│   └── settings.json            # ⚠️ env.PATH가 머신 종속 — 아래 셋업 3번 참조
-├── .moai/                       # 컨테이너 레벨 config (config/sections, project/brand 등)
-├── .mcp.json                    # MCP 서버 정의 (토큰은 환경변수 참조)
-├── pkg-supply-chain-check.sh    # npm 패키지 공급망 공격 사전 검사 스크립트
-├── skills-lock.json             # 설치된 스킬 버전 잠금
-└── (앱 폴더들)                   # git 추적 제외 — 각자 독립 레포
+```text
+projects/                        ← DHAA workspace
+├── CLAUDE.md                    # 현재 reference orchestrator instructions
+├── development_pipeline_guideline.md
+├── core-skills/                 # reusable engineering rules
+├── .claude/                     # current harness implementation
+│   └── settings.json
+├── .moai/                       # current MoAI-ADK reference configuration
+├── .mcp.json                    # project-scoped MCP definitions
+├── pkg-supply-chain-check.sh    # npm package supply-chain pre-check
+├── skills-lock.json             # installed skill versions
+└── (app folders)                # independent domain repositories
 ```
 
-도메인 앱(예: pillwriter)과 로컬 런타임 상태(`.moai/reports|state|plans`, `.claude/tmp` 등)는 `.gitignore`의 "general-moai-adk container repo exclusions" 섹션으로 제외되어 있습니다.
+도메인 앱과 로컬 runtime state(`.moai/reports|state|plans`, `.claude/tmp` 등)는 이 workspace repository에서 분리합니다.
 
 ## 클론 후 셋업
 
 ### 0. 사전 요구사항
 
-- **Git** + **Git Bash** (Windows — 훅 스크립트가 bash로 실행됨)
-- **Node.js** (LTS) — `npx` 필수 (ccstatusline 상태줄, 각종 툴링)
-- **pnpm** — Node 패키지 관리는 pnpm만 사용
-- **gh CLI** — `gh auth login`으로 인증 (GitHub MCP는 읽기 전용 엔드포인트라 쓰기 작업은 gh CLI로)
-- **moai 바이너리** (moai-adk) — 공식 설치 가이드에 따라 설치 후 `moai --version`으로 확인
-- **Claude Code** CLI
+현재 reference implementation 기준 요구사항입니다.
+
+- **Git** + **Git Bash** (Windows — hook scripts)
+- **Node.js** (LTS)
+- **pnpm**
+- **gh CLI**
+- **moai binary** (MoAI-ADK)
+- **Claude Code CLI**
+
+향후 harness abstraction이 진행되면 이 요구사항은 implementation-specific 문서로 분리할 예정입니다.
 
 ### 1. 클론
 
 ```bash
-# 워크스페이스 컨테이너로 클론 (폴더명은 자유)
-git clone git@github.com:Seung-zedd/general-moai-adk.git projects
+git clone git@github.com:Seung-zedd/dhaa.git projects
 cd projects
 ```
 
 ### 2. MCP 서버 설정
 
-이 컨테이너가 실제로 사용하는 MCP 서버는 두 종류로 나뉩니다. **프로젝트 스코프**만 레포에 committed되고(`.mcp.json`), 나머지는 머신 종속(절대경로)이거나 계정 종속이라 committed하지 않습니다 — 클론 후 각자 `claude mcp add`로 설치하세요. 현재 상태는 `claude mcp list`로 확인합니다.
+현재 reference environment에서 사용하는 MCP 구성입니다.
 
 | 서버 | 스코프 | 전송 | 용도 | 설치 / 인증 |
 |------|--------|------|------|-------------|
-| **github** | 프로젝트 (`.mcp.json`) | HTTP (readonly) | 레포/이슈/PR 읽기 | `${GITHUB_PERSONAL_ACCESS_TOKEN}` 환경변수 등록. 쓰기 작업은 읽기 전용 엔드포인트라 `gh` CLI 사용 |
-| **context7** | user | HTTP | 최신 라이브러리 문서 조회 | `claude mcp add --transport http context7 https://mcp.context7.com/mcp` (API 키 불필요) |
-| **serena** | user | stdio | LSP 심볼 검색·편집 | `uv`/`uvx` 설치 후 `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@v1.5.3 serena start-mcp-server --project-from-cwd --context claude-code` |
-| **headroom** | user | stdio | 컨텍스트 압축 | `headroom` 패키지 설치 후 `claude mcp add headroom -- headroom mcp serve` |
-| **pencil** | user | stdio | UI 디자인(.pen) 편집 | Pencil 데스크탑 앱 설치 후, 앱의 `mcp-server` 실행파일 경로로 `claude mcp add` (경로는 머신마다 다름) |
-| **vercel** | plugin | HTTP | Vercel 배포·문서 | Claude Code 플러그인(`plugin:vercel:vercel`)으로 설치, `https://mcp.vercel.com` |
-| **claude.ai** (Gmail/Calendar/Drive/Linear) | account | HTTP | Google/Linear 연동 | Claude 계정에 연결된 커넥터 — 세션 안에서 `/mcp`로 인증 |
+| **github** | project (`.mcp.json`) | HTTP (readonly) | repo/issue/PR read | `${GITHUB_PERSONAL_ACCESS_TOKEN}` 환경변수 |
+| **context7** | user | HTTP | 최신 라이브러리 문서 조회 | `claude mcp add --transport http context7 https://mcp.context7.com/mcp` |
+| **serena** | user | stdio | LSP symbol search/edit | `uvx` 기반 설치 |
+| **headroom** | user | stdio | context compression | `headroom mcp serve` |
+| **pencil** | user | stdio | UI design(.pen) editing | local desktop executable |
+| **vercel** | plugin | HTTP | deployment/docs | Claude Code plugin |
+| **claude.ai connectors** | account | HTTP | Google/Linear integration | `/mcp` authentication |
 
-- stdio 서버(serena/headroom/pencil)의 실행 경로는 **본인 머신의 설치 경로에 맞게** 지정하세요. 위 명령은 예시이며, 정확한 값은 원본 머신의 `claude mcp list` 출력을 참고합니다.
-- 프로젝트 스코프 서버 활성화는 `.claude/settings.local.json`의 `enabledMcpjsonServers`로 제어됩니다(비추적, 머신 로컬).
-- 예전에 시도했던 `moai-lsp`는 미동작으로 `.mcp.json`에서 제거되었습니다 — `enabledMcpjsonServers`에 잔여 참조가 있으면 정리하세요.
+stdio 서버의 실행 경로는 머신마다 다를 수 있습니다.
 
-### 3. ⚠️ `.claude/settings.json`의 `env.PATH` 수정 (필수)
+### 3. `.claude/settings.json`의 `env.PATH` 수정
 
-`env.PATH`는 원본 머신(`C:\Users\sdok1`) 전용 절대경로입니다. **본인 머신의 경로로 교체하세요**:
+현재 reference implementation에는 머신 종속 경로가 포함될 수 있습니다. 클론한 환경에 맞게 다음 경로를 수정해야 합니다.
 
-- Node.js 설치 경로 (예: `C:\Program Files\nodejs` / `/c/Program Files/nodejs`)
-- npm 전역 경로 (예: `C:\Users\<you>\AppData\Roaming\npm`)
-- moai 설치 경로 (예: `C:\Users\<you>\AppData\Local\Programs\moai`)
+- Node.js installation path
+- npm global path
+- moai installation path
 
-**수정하지 않으면 생기는 증상** (settings.json 내 `"//"` 주석 참조):
-- `npx`가 exit 127로 죽어 ccstatusline **상태줄이 아예 안 뜸**
-- moai 훅들이 에러 없이 **조용히 no-op** (MoAI 컨텍스트 주입 소실)
-
-수정 후 반드시 **세션 재시작** — `statusLine`/`env` 블록은 세션 시작 시에만 로드됩니다.
+설정 후 세션을 재시작합니다.
 
 ### 4. 동작 확인
 
 ```bash
-# 컨테이너에서 세션을 열어 엔진 로드 확인
 claude   # 또는 moai cc
 ```
 
-- 상태줄(ccstatusline)이 뜨는지 확인
-- `/moai` 슬래시 명령이 인식되는지 확인
+현재 구현에서는 다음을 확인합니다.
 
-## 새 앱 추가 방법
+- ccstatusline 정상 표시
+- `/moai` slash command 인식
+- workspace-level instructions/skills/rules 상속 여부
 
-> 상세 절차와 트러블슈팅은 `development_pipeline_guideline.md` 1단계 참조.
+## 새 도메인 앱 추가
+
+> 현재 Claude Code + MoAI-ADK reference implementation 기준입니다.
 
 ```bash
-# 1) 컨테이너 루트에서 앱 스캐폴딩 (목적: 로컬 .moai/ 확보)
+# 1) local .moai/ 확보
 moai init my-new-app
 cd my-new-app
 
-# 2) 상속되는 중복본 제거 (context bloat 방지)
+# 2) 상위 workspace에서 상속되는 중복 구성 제거
 rm CLAUDE.md
 rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
-# ⚠️ .claude/hooks는 절대 삭제 금지 — settings.json 훅이 상대경로로 참조 (상속 안 됨)
-# 유지: .moai/, .claude/settings*.json, .claude/hooks, .gitignore, .mcp.json
 
-# 3) statusLine 고정 (moai init이 만든 bash 래퍼는 Windows에서 실행 안 됨)
-#    .claude/settings.json의 statusLine 블록을 아래로 교체:
-#    {"type":"command","command":"npx -y ccstatusline@latest","padding":0,"refreshInterval":10}
-rm .moai/status_line.sh
+# 현재 구현에서는 hooks/settings 등 local runtime-dependent files는 유지
 
-# 4) PRD.md를 앱 루트에 배치 후 세션 시작
+# 3) session start
 moai cc
 ```
 
-세션 안에서: `/moai project <이름>` → `/moai plan` → `/moai run SPEC-XXX` → `/moai loop`/`fix` → `/moai sync`
+현재 MoAI workflow 예시:
+
+```text
+/moai project <name>
+    ↓
+/moai plan
+    ↓
+/moai run SPEC-XXX
+    ↓
+/moai loop / fix
+    ↓
+/moai sync
+```
+
+이 workflow 역시 DHAA의 불변 API가 아니라 **현재 실험 중인 reference workflow**입니다.
+
+## Experiment Roadmap
+
+현재 DHAA에서 검증하려는 핵심 질문은 다음과 같습니다.
+
+1. Domain-specific context를 workspace engine과 얼마나 명확하게 분리할 수 있는가?
+2. Claude Code-specific instructions를 다른 harness에서도 재사용 가능한 형태로 추상화할 수 있는가?
+3. Planner, reviewer, worker 같은 agent role을 특정 모델이나 agent implementation과 분리할 수 있는가?
+4. SPEC, test, review, sync와 같은 engineering lifecycle을 harness-independent contract로 정의할 수 있는가?
+5. 이러한 추상화가 context bloat이나 orchestration complexity를 실제로 줄이는가?
+
+이 질문들이 충분히 검증되기 전까지 DHAA의 구조와 명칭은 안정된 public API로 간주하지 않습니다.
 
 ## 주의사항
 
-- **`moai update`는 반드시 이 컨테이너 루트에서만** 실행 — 앱에서 실행하면 템플릿이 다시 밀려들어와 중복 제거·statusLine 고정을 재수행해야 합니다.
-- **앱 폴더는 각자 독립 git 레포**로 관리 — 이 컨테이너 레포에는 절대 추적되지 않습니다 (`.gitignore` 참조). 새 앱 폴더를 만들면 exclusions 섹션에 폴더명을 추가하세요.
-- **상태줄이 안 뜰 때 진단 순서**: ① 세션 재시작(1순위 원인) → ② `settings.json`의 `statusLine.command`가 `npx -y ccstatusline@latest`인지 확인 → ③ `env.PATH`에 nodejs 포함 여부(셋업 3번) → ④ `~/.config/ccstatusline/` 전역 설정 충돌.
-- **패키지 설치 전** `pkg-supply-chain-check.sh`로 공급망 검사: `bash pkg-supply-chain-check.sh <package> [version]`
+- 현재는 **Experiment Stage**이므로 breaking changes가 발생할 수 있습니다.
+- Claude Code와 MoAI-ADK는 현재의 **reference implementation**이며 DHAA의 필수 구성요소로 확정된 것이 아닙니다.
+- `moai update` 등 implementation-specific 명령은 현재 reference environment의 동작 방식에 따릅니다.
+- 앱 폴더는 각자 독립 Git repository로 관리하는 것을 전제로 합니다.
+- 패키지 설치 전 `pkg-supply-chain-check.sh`를 이용해 공급망 검사를 수행할 수 있습니다.
+
+---
+
+**DHAA is an experiment in separating agentic engineering workflows from the domain, harness, and agent implementations that execute them.**
