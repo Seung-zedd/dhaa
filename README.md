@@ -2,10 +2,14 @@
 
 [English](README.en.md) · [한국어](README.md) · [日本語](README.ja.md) · [中文](README.zh.md)
 
-> **Experiment Stage**  
-> DHAA는 현재 개념과 구조를 검증하는 실험 단계입니다. 인터페이스, 디렉토리 구조, 지원 harness 및 agent 구성은 실험 결과에 따라 변경될 수 있습니다.
+### 특정 Domain? **다** 상관없음.
+### Claude Code냐 Codex냐? **다** 상관없음.
+### 어떤 Agent냐? **다** 상관없음.
 
-**DHAA = Domain, Harness & Agent-Agnostic**
+**DHAA — Domain, Harness & Agent-Agnostic**
+
+> **🚧 Experiment Stage**  
+> DHAA는 현재 domain, harness, agent로부터 개발 워크플로우를 얼마나 분리할 수 있는지 검증하는 실험 프로젝트입니다. 인터페이스, 디렉토리 구조, 지원 harness 및 agent 구성은 실험 결과에 따라 변경될 수 있습니다.
 
 특정 애플리케이션 도메인, 특정 AI coding harness, 특정 agent 구현에 종속되지 않는 **agentic engineering workspace architecture**를 지향합니다.
 
