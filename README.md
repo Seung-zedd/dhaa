@@ -36,7 +36,7 @@ DHAA는 provider outage 자체를 제거하려는 프로젝트가 아닙니다. 
 
 DHAA는 다음 결합을 느슨하게 만드는 것을 목표로 합니다.
 
-- **Domain-agnostic** — PillWriter 같은 특정 제품이나 SaaS, XR, backend 등 하나의 문제 도메인에 종속되지 않음
+- **Domain-agnostic** — 특정 제품이나 SaaS, XR, backend 등 하나의 문제 도메인에 종속되지 않음
 - **Harness-agnostic** — Claude Code, Codex, OpenCode 등 특정 coding harness에 고정되지 않음
 - **Agent-agnostic** — 특정 planner, reviewer, worker agent나 특정 모델 구현에 종속되지 않음
 - **Orchestration-agnostic** — MoAI-ADK를 포함한 특정 orchestration framework나 lifecycle implementation에 고정되지 않음
@@ -59,8 +59,6 @@ DHAA-owned workflow state
 즉, Claude Code나 Codex 같은 harness는 개발 세션의 주인이 아니라 **현재 workflow를 실행하는 executor**에 가깝게 취급합니다.
 
 ### Portable Context / Continuity Bundle
-
-실험적으로 다음과 같은 정보를 특정 harness에 종속되지 않는 형태로 분리하는 것을 목표로 합니다.
 
 ```text
 DHAA Continuity Bundle
@@ -88,7 +86,7 @@ DHAA Continuity Bundle
     └── continuation instructions
 ```
 
-예를 들어 `CLAUDE.md`나 `AGENTS.md` 자체를 DHAA의 canonical format으로 고정하는 대신, 더 상위의 constitution을 두고 각 harness adapter가 자신의 형식으로 투영하는 방식을 실험할 수 있습니다.
+`CLAUDE.md`나 `AGENTS.md` 자체를 canonical format으로 고정하는 대신, 더 상위의 constitution을 두고 각 harness adapter가 자신의 형식으로 투영하는 방식을 실험합니다.
 
 ```text
 DHAA Constitution
@@ -104,10 +102,6 @@ DHAA Constitution
 3. **Policy continuity** — 어떤 규칙과 원칙으로 작업해야 하는가?
 
 ## 장애 대응 실험
-
-DHAA는 외부 API 장애를 숨기는 것이 아니라, 장애를 감지하고 제한된 범위에서 흡수한 뒤 필요하면 다른 실행 경로로 넘기는 것을 목표로 합니다.
-
-예시:
 
 ```text
 529 / 429 / timeout
@@ -129,9 +123,51 @@ rehydrate context and resume
 
 지수 백오프는 일시적인 overload를 흡수하기 위한 첫 번째 방어선이며, 지속적인 장애까지 무한 재시도하는 대신 retry budget과 failover policy를 함께 두는 방향을 실험합니다.
 
+> **Retry transient failures, isolate persistent failures, preserve state, then fail over.**
+
+## Branch Strategy
+
+DHAA의 Git branch도 같은 abstraction 원칙을 따릅니다.
+
+Git branch 자체에는 실제 부모-자식 계층이 없으므로 `/` 기반 naming convention을 이용해 논리적인 분류를 표현합니다.
+
+```text
+main
+│
+├── feature/core/continuity-bundle
+├── feature/core/lifecycle-contract
+│
+├── feature/claude-specific/context-adapter
+├── feature/claude-specific/memory-handoff
+├── feature/claude-specific/moai-bridge
+│
+├── feature/codex-specific/context-adapter
+├── feature/codex-specific/memory-handoff
+│
+└── feature/<harness>-specific/...
+```
+
 핵심 원칙은 다음과 같습니다.
 
-> **Retry transient failures, isolate persistent failures, preserve state, then fail over.**
+> **main = agnostic truth, `*-specific` branches = implementation experiments.**
+
+- `main`에는 harness/vendor에 종속되지 않는 canonical contract, architecture, invariant를 둡니다.
+- `feature/core/*`에서는 continuity bundle, lifecycle contract처럼 DHAA 자체의 portable abstraction을 실험합니다.
+- `feature/claude-specific/*`, `feature/codex-specific/*` 등에서는 각 harness에 최적화된 adapter와 integration을 실험합니다.
+- Claude-specific 구현과 Codex-specific 구현은 서로 동일할 필요가 없습니다. **구현 방식은 달라도 DHAA-level contract와 continuity invariant를 만족하면 됩니다.**
+- 특정 harness에서 검증된 구현을 다른 harness에 기계적으로 복제하지 않고, 각 harness의 native capability를 최대한 활용합니다.
+
+```text
+                 DHAA Contract
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+   Claude-native adapter    Codex-native adapter
+          │                       │
+          └──── same contract ────┘
+```
+
+기존 feature branch에 남아 있는 Claude-specific 구현은 바로 제거하지 않고, 향후 PR 시점에 이 기준으로 portable core와 harness-specific adapter를 분리합니다.
 
 ## 현재 reference implementation
 
@@ -144,30 +180,22 @@ rehydrate context and resume
 | **Claude Code 레이어** | ✅ 하위 폴더로 자동 상속 | `CLAUDE.md`, `.claude/`(agents/skills/rules/hooks/commands), `/moai` 슬래시 명령 |
 | **`moai` 바이너리 레이어** | ❌ 로컬 `.moai/`만 인식 | `moai status`/`loop`/`fix`/quality gate — 앱마다 로컬 `.moai/` 필요 |
 
-- Claude Code는 디렉토리 트리를 위로 탐색하므로, 앱 하위 폴더에서 세션을 열면 이 workspace의 agentic engine 구성을 상속받습니다.
-- `moai` 바이너리는 상위 `.moai/`를 상속하지 않으므로 앱마다 `moai init`으로 로컬 `.moai/`를 확보합니다.
-- 이 구조를 이용해 앱마다 동일한 `CLAUDE.md`, agents, skills, rules를 중복 보유하면서 발생하는 context bloat을 줄이는 것을 실험하고 있습니다.
-- 향후에는 이 구조 자체도 Claude Code / MoAI-ADK implementation detail로 격리하고, DHAA-level contract와 adapter layer를 별도로 정의할 예정입니다.
+이 구조 자체도 향후 Claude Code / MoAI-ADK implementation detail로 격리하고, DHAA-level contract와 adapter layer를 별도로 정의할 예정입니다.
 
 ## 레포 구성
 
-현재 reference implementation 기준 구조입니다.
-
 ```text
-projects/                        ← DHAA workspace
-├── CLAUDE.md                    # current Claude Code projection / orchestrator instructions
+projects/
+├── CLAUDE.md
 ├── development_pipeline_guideline.md
-├── core-skills/                 # reusable engineering rules
-├── .claude/                     # current Claude Code harness implementation
-│   └── settings.json
-├── .moai/                       # current MoAI-ADK reference implementation
-├── .mcp.json                    # project-scoped MCP definitions
-├── pkg-supply-chain-check.sh    # npm package supply-chain pre-check
-├── skills-lock.json             # installed skill versions
-└── (app folders)                # independent domain repositories
+├── core-skills/
+├── .claude/
+├── .moai/
+├── .mcp.json
+├── pkg-supply-chain-check.sh
+├── skills-lock.json
+└── (app folders)
 ```
-
-도메인 앱과 로컬 runtime state(`.moai/reports|state|plans`, `.claude/tmp` 등)는 이 workspace repository에서 분리합니다.
 
 향후에는 다음과 같은 DHAA-owned 영역을 분리하는 방향을 실험할 예정입니다.
 
@@ -187,80 +215,31 @@ projects/                        ← DHAA workspace
 
 ## 클론 후 셋업
 
-### 0. 사전 요구사항
-
 현재 reference implementation 기준 요구사항입니다.
 
-- **Git** + **Git Bash** (Windows — hook scripts)
-- **Node.js** (LTS)
-- **pnpm**
-- **gh CLI**
-- **moai binary** (MoAI-ADK)
-- **Claude Code CLI**
-
-향후 abstraction이 진행되면 이 요구사항은 implementation-specific 문서로 분리할 예정입니다.
-
-### 1. 클론
+- Git + Git Bash
+- Node.js (LTS)
+- pnpm
+- gh CLI
+- moai binary
+- Claude Code CLI
 
 ```bash
 git clone git@github.com:Seung-zedd/dhaa.git projects
 cd projects
 ```
 
-### 2. MCP 서버 설정
-
-현재 reference environment에서 사용하는 MCP 구성입니다.
-
-| 서버 | 스코프 | 전송 | 용도 | 설치 / 인증 |
-|------|--------|------|------|-------------|
-| **github** | project (`.mcp.json`) | HTTP (readonly) | repo/issue/PR read | `${GITHUB_PERSONAL_ACCESS_TOKEN}` 환경변수 |
-| **context7** | user | HTTP | 최신 라이브러리 문서 조회 | `claude mcp add --transport http context7 https://mcp.context7.com/mcp` |
-| **serena** | user | stdio | LSP symbol search/edit | `uvx` 기반 설치 |
-| **headroom** | user | stdio | context compression | `headroom mcp serve` |
-| **pencil** | user | stdio | UI design(.pen) editing | local desktop executable |
-| **vercel** | plugin | HTTP | deployment/docs | Claude Code plugin |
-| **claude.ai connectors** | account | HTTP | Google/Linear integration | `/mcp` authentication |
-
-stdio 서버의 실행 경로는 머신마다 다를 수 있습니다.
-
-### 3. `.claude/settings.json`의 `env.PATH` 수정
-
-현재 reference implementation에는 머신 종속 경로가 포함될 수 있습니다. 클론한 환경에 맞게 다음 경로를 수정해야 합니다.
-
-- Node.js installation path
-- npm global path
-- moai installation path
-
-설정 후 세션을 재시작합니다.
-
-### 4. 동작 확인
-
-```bash
-claude   # 또는 moai cc
-```
-
-현재 구현에서는 다음을 확인합니다.
-
-- ccstatusline 정상 표시
-- `/moai` slash command 인식
-- workspace-level instructions/skills/rules 상속 여부
+현재 reference environment에는 Claude Code와 MoAI-ADK 전용 설정이 포함되어 있으며, 향후 abstraction이 진행되면 implementation-specific 문서로 분리할 예정입니다.
 
 ## 새 도메인 앱 추가
 
 > 현재 Claude Code + MoAI-ADK reference implementation 기준입니다.
 
 ```bash
-# 1) local .moai/ 확보
 moai init my-new-app
 cd my-new-app
-
-# 2) 상위 workspace에서 상속되는 중복 구성 제거
 rm CLAUDE.md
 rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
-
-# 현재 구현에서는 hooks/settings 등 local runtime-dependent files는 유지
-
-# 3) session start
 moai cc
 ```
 
@@ -282,8 +261,6 @@ moai cc
 
 ## Experiment Roadmap
 
-현재 DHAA에서 검증하려는 핵심 질문은 다음과 같습니다.
-
 1. Domain-specific context를 workspace/control-plane과 얼마나 명확하게 분리할 수 있는가?
 2. `CLAUDE.md`, `AGENTS.md` 같은 harness-specific instruction format 위에 portable constitution을 정의할 수 있는가?
 3. Durable memory와 session handoff를 특정 vendor session 밖으로 옮길 수 있는가?
@@ -292,8 +269,6 @@ moai cc
 6. Provider 장애 시 exponential backoff와 retry budget을 적용하고, 지속적인 장애에서는 state를 보존한 채 다른 provider 또는 harness로 전환할 수 있는가?
 7. Harness 전환 후에도 task, memory, policy continuity를 유지할 수 있는가?
 8. 이러한 추상화가 context bloat, orchestration complexity, human intervention wall-clock time을 실제로 줄이는가?
-
-초기 우선순위는 다음 영역의 실험입니다.
 
 ```text
 P0  Portable constitution / memory / execution state
@@ -304,16 +279,12 @@ P1  Dynamic workflow orchestration
 P1  Human intervention wall-clock time measurement
 ```
 
-이 질문들이 충분히 검증되기 전까지 DHAA의 구조와 명칭은 안정된 public API로 간주하지 않습니다.
-
 ## 주의사항
 
 - 현재는 **Experiment Stage**이므로 breaking changes가 발생할 수 있습니다.
 - Claude Code와 MoAI-ADK는 현재의 **reference implementation**이며 DHAA의 필수 구성요소가 아닙니다.
 - MoAI-ADK를 포함한 orchestration framework 역시 향후 adapter 또는 implementation layer로 격리하는 것을 목표로 합니다.
-- `moai update` 등 implementation-specific 명령은 현재 reference environment의 동작 방식에 따릅니다.
 - 앱 폴더는 각자 독립 Git repository로 관리하는 것을 전제로 합니다.
-- 패키지 설치 전 `pkg-supply-chain-check.sh`를 이용해 공급망 검사를 수행할 수 있습니다.
 
 ---
 
