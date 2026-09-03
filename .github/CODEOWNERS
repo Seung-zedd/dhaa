@@ -1,0 +1,18 @@
+# Security-sensitive automation and agent configuration
+/.github/                 @Seung-zedd
+/.claude/                 @Seung-zedd
+/.dhaa/                   @Seung-zedd
+
+# Executable scripts
+*.sh                      @Seung-zedd
+*.ps1                     @Seung-zedd
+
+# Dependency / supply-chain configuration
+/package.json             @Seung-zedd
+/pnpm-lock.yaml           @Seung-zedd
+/skills-lock.json         @Seung-zedd
+/pkg-supply-chain-check.sh @Seung-zedd
+
+# Core governance / agent instructions
+/CLAUDE.md                @Seung-zedd
+/AGENTS.md                @Seung-zedd
