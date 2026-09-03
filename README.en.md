@@ -2,132 +2,222 @@
 
 [English](README.en.md) · [한국어](README.md) · [日本語](README.ja.md) · [中文](README.zh.md)
 
-> **Experiment Stage**  
-> DHAA is currently in an experimental stage focused on validating its concepts and structure. Interfaces, directory layout, supported harnesses, and agent composition may change as the experiment evolves.
+### Any Domain? **Doesn't matter.**
+### Claude Code or Codex? **Doesn't matter.**
+### Which Agent? **Doesn't matter.**
 
-**DHAA = Domain, Harness & Agent-Agnostic**
+**DHAA — Domain, Harness & Agent-Agnostic**
 
-DHAA aims to provide an **agentic engineering workspace architecture** that is not tightly coupled to a specific application domain, AI coding harness, or agent implementation.
+> **🚧 Experiment Stage**  
+> DHAA is an experimental project exploring how far **agentic software engineering workflows and context ownership** can be separated from domains, harnesses, and agents. Interfaces, directory layouts, supported harnesses, and agent composition may change as the experiments evolve.
 
-The current reference implementation uses **Claude Code + MoAI-ADK**, but the goal of DHAA is not to standardize on that implementation. Instead, it explores how development workflows and operational rules can be separated into higher-level layers so they can be reused across different combinations of domains, harnesses, and agents.
+DHAA aims to become an **agentic engineering control plane / workspace architecture** that is not tightly coupled to a particular application domain, AI coding harness, or agent implementation.
+
+The reference implementation started with **Claude Code + MoAI-ADK**, but DHAA does not intend to standardize on that combination. Coding harnesses such as Claude Code, Codex, and OpenCode, as well as orchestration frameworks such as MoAI-ADK, are treated as **replaceable implementations** beneath higher-level workflow, policy, memory, and execution-state abstractions.
+
+## Why?
+
+When an agentic development workflow is tightly coupled to a vendor or harness session, an external outage can become a complete development outage.
+
+If an LLM API returns `529`, `429`, or timeout failures, the problem becomes much larger when the session also owns the active goal, task state, memory, governing instructions such as `CLAUDE.md` or `AGENTS.md`, agent roles, and the engineering lifecycle.
+
+DHAA does not attempt to eliminate provider outages. It aims to **reduce their blast radius so that an external failure does not automatically become a workflow failure**.
+
+> **DHAA does not prevent provider outages; it aims to prevent provider outages from becoming workflow outages.**
 
 ## Goals
 
-DHAA aims to loosen three types of coupling:
+- **Domain-agnostic** — not tied to a specific product, SaaS, XR system, backend, or other problem domain
+- **Harness-agnostic** — not permanently tied to Claude Code, Codex, OpenCode, or another coding harness
+- **Agent-agnostic** — roles and rules are separated from specific planner, reviewer, worker agents or model implementations
+- **Orchestration-agnostic** — not tied to MoAI-ADK or another orchestration framework or lifecycle implementation
+- **Context-portable** — constitution, durable memory, execution state, and handoff state can survive outside a particular session or harness and move to another execution path
 
-- **Domain-agnostic** — not tied to a specific product or problem domain such as PillWriter, SaaS, XR, or backend systems
-- **Harness-agnostic** — structured so that the execution harness is not permanently tied to Claude Code and can potentially be replaced by another coding-agent harness
-- **Agent-agnostic** — separates roles and rules from specific planner, reviewer, worker agents, or model implementations
+The current implementation still contains Claude Code and MoAI-ADK coupling. This repository is therefore a **reference experiment**, not a finished agnostic framework.
 
-The current implementation still contains coupling to Claude Code and MoAI-ADK. Therefore, this repository should be viewed not as a finished agnostic framework, but as a **reference experiment** for validating how far those dependencies can be generalized and reduced.
+## Core Idea: Separate Workflow and Context Ownership
 
-## Current Implementation: Two-Layer Inheritance Model
+A vendor session should not be the canonical owner of engineering state.
 
-The current experiment uses Claude Code and MoAI-ADK in a two-layer workspace model.
+```text
+Vendor / Harness Session
+        ↓
+   transient executor
+        ↓
+DHAA-owned workflow state
+```
+
+Claude Code, Codex, or another harness is treated as an executor of the current workflow rather than the owner of the development session.
+
+### Portable Context / Continuity Bundle
+
+```text
+DHAA Continuity Bundle
+├── Constitution
+│   ├── governing rules
+│   ├── engineering principles
+│   └── harness-specific projection (e.g. CLAUDE.md, AGENTS.md)
+├── Durable Memory
+│   ├── project decisions
+│   ├── learned constraints
+│   └── long-lived context
+├── Execution State
+│   ├── active goal
+│   ├── current lifecycle phase
+│   ├── completed / pending tasks
+│   ├── observations
+│   └── test / git state
+└── Session Handoff
+    ├── latest summary
+    ├── unresolved questions
+    ├── important tool outputs
+    └── continuation instructions
+```
+
+Instead of making `CLAUDE.md` or `AGENTS.md` the canonical format, DHAA explores a higher-level constitution projected by harness adapters.
+
+```text
+DHAA Constitution
+    ├── Claude adapter → CLAUDE.md
+    ├── Codex adapter  → AGENTS.md
+    └── Other adapter  → harness-specific instructions
+```
+
+The goal is to preserve three forms of continuity across harness changes: **task continuity, memory continuity, and policy continuity**.
+
+## Failure-Resilience Experiment
+
+```text
+529 / 429 / timeout
+        ↓
+classify transient failure
+        ↓
+exponential backoff + jitter
+        ↓
+retry budget exceeded
+        ↓
+checkpoint current state
+        ↓
+failover decision
+        ↓
+alternate provider or harness
+        ↓
+rehydrate context and resume
+```
+
+Exponential backoff is the first defense against transient overload. Persistent failures should not cause infinite retries; DHAA instead explores retry budgets and failover policies.
+
+> **Retry transient failures, isolate persistent failures, preserve state, then fail over.**
+
+## Branch Strategy
+
+DHAA's Git branches follow the same abstraction principle. Git branches do not have a real parent-child hierarchy, so `/`-based naming expresses a logical hierarchy.
+
+```text
+main
+│
+├── feature/core/continuity-bundle
+├── feature/core/lifecycle-contract
+│
+├── feature/claude-specific/context-adapter
+├── feature/claude-specific/memory-handoff
+├── feature/claude-specific/moai-bridge
+│
+├── feature/codex-specific/context-adapter
+├── feature/codex-specific/memory-handoff
+│
+└── feature/<harness>-specific/...
+```
+
+> **main = agnostic truth, `*-specific` branches = implementation experiments.**
+
+- `main` contains canonical contracts, architecture, and invariants that are independent of a harness or vendor.
+- `feature/core/*` experiments with portable DHAA abstractions such as the continuity bundle and lifecycle contract.
+- `feature/claude-specific/*`, `feature/codex-specific/*`, and similar branches explore adapters and integrations optimized for each harness.
+- Claude-specific and Codex-specific implementations do not need to look alike. **They only need to satisfy the same DHAA-level contracts and continuity invariants.**
+- A successful implementation for one harness should not be mechanically copied to another; each adapter should exploit the native capabilities of its harness.
+
+```text
+                 DHAA Contract
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+   Claude-native adapter    Codex-native adapter
+          │                       │
+          └──── same contract ────┘
+```
+
+Existing Claude-specific work in feature branches can remain until PR time, when portable core logic and harness-specific adapter logic can be separated under these rules.
+
+## Current Reference Implementation
+
+The current environment still uses **Claude Code + MoAI-ADK**. This is the first reference implementation for discovering abstraction boundaries, not DHAA's final architecture.
 
 | Layer | Inherited? | Description |
 |---|---|---|
-| **Claude Code layer** | ✅ inherited by child directories | `CLAUDE.md`, `.claude/` (agents/skills/rules/hooks/commands), `/moai` slash commands |
-| **`moai` binary layer** | ❌ only local `.moai/` is recognized | `moai status`/`loop`/`fix`/quality gates — each app requires its own local `.moai/` |
+| **Claude Code layer** | ✅ inherited by child directories | `CLAUDE.md`, `.claude/` agents/skills/rules/hooks/commands, `/moai` slash commands |
+| **`moai` binary layer** | ❌ only local `.moai/` is recognized | status/loop/fix/quality gates; each app requires a local `.moai/` |
 
-- Claude Code traverses the directory tree upward, so sessions opened inside child app folders inherit the workspace-level agentic engine configuration.
-- The `moai` binary does not inherit the parent `.moai/`, so each application obtains its own local `.moai/` through `moai init`.
-- This structure experiments with reducing context bloat caused by duplicating the same `CLAUDE.md`, agents, skills, and rules in every application repository.
+This two-layer model is itself expected to become an implementation detail behind DHAA-level contracts and adapters.
 
 ## Repository Layout
 
 ```text
-projects/                        ← DHAA workspace
-├── CLAUDE.md                    # current reference orchestrator instructions
+projects/
+├── CLAUDE.md
 ├── development_pipeline_guideline.md
-├── core-skills/                 # reusable engineering rules
-├── .claude/                     # current harness implementation
-│   └── settings.json
-├── .moai/                       # current MoAI-ADK reference configuration
-├── .mcp.json                    # project-scoped MCP definitions
-├── pkg-supply-chain-check.sh    # npm package supply-chain pre-check
-├── skills-lock.json             # installed skill versions
-└── (app folders)                # independent domain repositories
+├── core-skills/
+├── .claude/
+├── .moai/
+├── .mcp.json
+├── pkg-supply-chain-check.sh
+├── skills-lock.json
+└── (app folders)
 ```
 
-Domain applications and local runtime state such as `.moai/reports|state|plans` and `.claude/tmp` are separated from this workspace repository.
+A future DHAA-owned area may evolve toward:
 
-## Setup After Cloning
+```text
+.dhaa/
+├── constitution/
+├── memory/
+├── state/
+├── handoff/
+└── adapters/
+    ├── claude/
+    ├── codex/
+    └── ...
+```
 
-### 0. Prerequisites
+This is a **design direction**, not a stable public API.
 
-These requirements apply to the current reference implementation.
+## Setup
 
-- **Git** + **Git Bash** (Windows — for hook scripts)
-- **Node.js** (LTS)
-- **pnpm**
-- **gh CLI**
-- **moai binary** (MoAI-ADK)
-- **Claude Code CLI**
+Current reference implementation requirements:
 
-As harness abstraction progresses, these requirements are expected to move into implementation-specific documentation.
-
-### 1. Clone
+- Git + Git Bash
+- Node.js (LTS)
+- pnpm
+- gh CLI
+- moai binary
+- Claude Code CLI
 
 ```bash
 git clone git@github.com:Seung-zedd/dhaa.git projects
 cd projects
 ```
 
-### 2. MCP Server Configuration
+Claude Code and MoAI-ADK-specific setup is currently part of the reference environment and is expected to move into implementation-specific documentation as abstraction progresses.
 
-The current reference environment uses the following MCP setup.
+## Adding a Domain Application
 
-| Server | Scope | Transport | Purpose | Setup / Auth |
-|---|---|---|---|---|
-| **github** | project (`.mcp.json`) | HTTP (readonly) | repo/issue/PR read | `${GITHUB_PERSONAL_ACCESS_TOKEN}` environment variable |
-| **context7** | user | HTTP | latest library docs | `claude mcp add --transport http context7 https://mcp.context7.com/mcp` |
-| **serena** | user | stdio | LSP symbol search/edit | installed via `uvx` |
-| **headroom** | user | stdio | context compression | `headroom mcp serve` |
-| **pencil** | user | stdio | UI design (.pen) editing | local desktop executable |
-| **vercel** | plugin | HTTP | deployment/docs | Claude Code plugin |
-| **claude.ai connectors** | account | HTTP | Google/Linear integration | `/mcp` authentication |
-
-Paths for stdio servers may differ by machine.
-
-### 3. Update `env.PATH` in `.claude/settings.json`
-
-The current reference implementation may contain machine-specific paths. Update them for your environment, including:
-
-- Node.js installation path
-- npm global path
-- moai installation path
-
-Restart the session after changing the settings.
-
-### 4. Verify the Environment
+> Current Claude Code + MoAI-ADK reference implementation only.
 
 ```bash
-claude   # or moai cc
-```
-
-In the current implementation, verify that:
-
-- ccstatusline renders correctly
-- `/moai` slash commands are recognized
-- workspace-level instructions, skills, and rules are inherited
-
-## Adding a New Domain Application
-
-> The following procedure applies to the current Claude Code + MoAI-ADK reference implementation.
-
-```bash
-# 1) obtain a local .moai/
 moai init my-new-app
 cd my-new-app
-
-# 2) remove duplicated configuration inherited from the parent workspace
 rm CLAUDE.md
 rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
-
-# keep local runtime-dependent files such as hooks/settings in the current implementation
-
-# 3) start a session
 moai cc
 ```
 
@@ -145,28 +235,35 @@ Current MoAI workflow example:
 /moai sync
 ```
 
-This workflow is not a stable DHAA API. It is part of the **current reference experiment**.
+This is one **orchestration reference**, not a stable DHAA API.
 
 ## Experiment Roadmap
 
-DHAA is currently exploring the following questions:
+1. How clearly can domain-specific context be separated from the DHAA control plane?
+2. Can a portable constitution exist above harness-specific formats such as `CLAUDE.md` and `AGENTS.md`?
+3. Can durable memory and session handoff move outside vendor sessions?
+4. Can planner, reviewer, and worker roles be separated from particular models and agent implementations?
+5. Can SPEC, plan, run, test, review, and sync be defined as independent contracts without requiring MoAI-ADK?
+6. Can provider failures use exponential backoff and retry budgets, then preserve state and switch provider or harness when failures persist?
+7. Can task, memory, and policy continuity survive a harness switch?
+8. Does this abstraction measurably reduce context bloat, orchestration complexity, and human intervention wall-clock time?
 
-1. How clearly can domain-specific context be separated from the workspace engine?
-2. Can Claude Code-specific instructions be abstracted into a form reusable by other harnesses?
-3. Can agent roles such as planner, reviewer, and worker be separated from specific models or agent implementations?
-4. Can engineering lifecycle stages such as SPEC, test, review, and sync be expressed as harness-independent contracts?
-5. Does this abstraction actually reduce context bloat and orchestration complexity?
-
-Until these questions are sufficiently validated, DHAA's structure and naming should not be considered a stable public API.
+```text
+P0  Portable constitution / memory / execution state
+P0  Harness adapter boundary
+P0  Failure detection + retry/backoff + failover
+P1  Harness-independent engineering lifecycle
+P1  Dynamic workflow orchestration
+P1  Human intervention wall-clock time measurement
+```
 
 ## Notes
 
-- DHAA is currently in **Experiment Stage**, so breaking changes are expected.
-- Claude Code and MoAI-ADK are the **current reference implementation**, not confirmed mandatory dependencies of DHAA.
-- Implementation-specific commands such as `moai update` currently follow the behavior of the reference environment.
-- Application folders are expected to be maintained as independent Git repositories.
-- `pkg-supply-chain-check.sh` can be used for package supply-chain checks before installation.
+- DHAA is in **Experiment Stage**, so breaking changes are expected.
+- Claude Code and MoAI-ADK are the **current reference implementation**, not mandatory DHAA components.
+- Orchestration frameworks, including MoAI-ADK, are intended to become replaceable implementation or adapter-layer concerns.
+- Application folders are expected to remain independent Git repositories.
 
 ---
 
-**DHAA is an experiment in separating agentic engineering workflows from the domain, harness, and agent implementations that execute them.**
+**DHAA is an experiment in making agentic software engineering workflows, memory, policy, and execution state portable across domains, harnesses, agents, and orchestration implementations.**
