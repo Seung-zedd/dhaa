@@ -46,6 +46,27 @@
           }
         ],
         "matcher": "Write|Edit|Bash"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/moai/pkg-add-guard.sh\"",
+            "timeout": 30,
+            "type": "command",
+            "statusMessage": "Checking new package(s) against supply-chain guard..."
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-curl-command.js\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-npm-supply-chain-risk.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -488,6 +509,28 @@
       "Edit(~/.ssh/**)",
       "Edit(~/.aws/**)",
       "Edit(~/.config/gcloud/**)",
+      "Read(.env)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(.env)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Write(.env)",
+      "Write(./.env)",
+      "Write(./.env.*)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "Bash(npm install -g*)",
+      "Bash(npm i -g*)",
+      "Bash(npm install --global*)",
+      "Bash(npx -y*)",
+      "Bash(npx --yes*)",
+      "Bash(npm exec -y*)",
+      "Bash(npm exec --yes*)",
       "Bash(rm -rf /:*)",
       "Bash(rm -rf /*:*)",
       "Bash(rm -rf ~:*)",
