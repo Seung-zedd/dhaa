@@ -78,7 +78,7 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 
 ### 3.1 v3.x orchestration topology — loop보다 위의 graph 레이어
 
-2026-09 교차 검증 기준으로, **현재 v3.x 템플릿에는 이미 "개별 에이전트 루프"보다 상위의 orchestration graph 개념이 실질적으로 들어와 있습니다.** 다만 `Splitter / Worker / Code node / Gate`, `correction edge / learning edge`, `blast-radius gate`라는 용어로 통합 모델링되어 있지는 않습니다.
+2026-09 교차 검증 기준으로, **현재 v3.x 템플릿에는 이미 "개별 에이전트 루프"보다 상위의 orchestration graph 개념이 실질적으로 들어와 있습니다.** 다만 외부 글에서 쓰는 `Splitter / Worker / Code node / Gate`, `correction edge / learning edge`라는 용어로 하나의 범용 graph protocol이 정식 모델링되어 있지는 않습니다.
 
 핵심은 다음 두 축의 분리입니다.
 
@@ -101,21 +101,24 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 
 또한 agentless pipeline은 graph 안의 모든 node를 모델로 만들 필요가 없다는 원칙과 대응합니다. localize → repair → validate처럼 순서가 deterministic한 경우 LLM dispatcher를 쓰지 않고, Agent 호출이 있더라도 phase 내부 executor로만 제한합니다.
 
-다만 다음 세 항목은 현재 교차 검증한 v3.x 템플릿에서 **명시적 SSOT로 확인되지 않았습니다.**
+추가로 DHAA의 `feature/spec-review-authority-chain` 브랜치에는 **AI 판단의 authority / risk gate가 이미 별도 계층으로 설계되어 있습니다.** `decision-index`가 `Impact`와 `Reversibility`를 기록하고, `EASY_REVERSIBLE / COSTLY_REVERSIBLE / HARD_TO_REVERSE / UNKNOWN`으로 되돌림 비용을 분류하며, destructive/irreversible·costly-reversible·data migration·persistence/public API contract 같은 항목은 `FOUNDER` 또는 `EVIDENCE-NEEDED`에서 시작합니다. 불확실한 경우에는 `When uncertain, escalate. Never downgrade.` 원칙으로 보수적으로 인간 판정으로 올립니다.
 
-1. **Correction edge의 정형화** — 실패한 `UNIT` 하나만 `{VERDICT, REASON, EVIDENCE, SCOPE}`와 함께 producer node로 반환하는 공통 계약.
-2. **Learning edge의 정형화** — 승인된 결과의 원인을 다음 run의 splitter/plan constraint로 승격시키는 공통 feedback contract.
-3. **Blast-radius 기반 gate taxonomy** — 모델 confidence 대신 reversible/contained, wide shared-surface, hard-to-reverse 같은 변경 반경과 되돌림 비용으로 gate 강도를 선택하는 일관된 정책.
+또한 이전 founder verdict를 `DECIDED`, 명시적 PRD/ADR/engineering policy를 `POLICY-COVERED`로 재사용하므로, **governance-level learning / persistent authority reuse** 역시 이미 이 설계에 포함되어 있습니다. 따라서 외부 글의 `blast-radius gate`와 "확정된 판단을 다음 판단의 constraint로 재사용"하는 아이디어는 DHAA의 신규 공백으로 보지 않습니다.
 
-즉 **v3.x는 graph topology, fan-out, deterministic node, human gate까지는 이미 상당 부분 흡수했지만, feedback edge와 risk-based gate를 하나의 일반화된 graph protocol로 묶는 단계까지는 아직 가지 않은 상태**로 보는 것이 정확합니다.
+`secure-file-upload`의 v3.x orchestration layer와 `feature/spec-review-authority-chain`의 AI 판정 layer를 제외하고 남는 공백은 **execution graph 자체의 feedback-edge protocol**입니다.
 
-참고로 `secure-file-upload`는 v3.x 템플릿의 `orchestration-mode-selection.md`와 dynamic workflow 계층을 실제 스캐폴딩 결과로 보존하고 있습니다. 반면 `pillwriter`는 바이너리는 v3.x 계열이지만 템플릿이 v2.x 계열이라 동일한 `orchestration-mode-selection.md` 파일이 존재하지 않아, 현재 구조 차이를 확인하는 legacy baseline 역할을 합니다.
+1. **Execution-level correction edge** — 실패한 `UNIT` 하나만 `{VERDICT, REASON, EVIDENCE, SCOPE}` 같은 구조화된 failure context와 함께 producer node로 반환하고, 전체 batch가 아니라 해당 unit만 scoped retry하는 공통 계약.
+2. **Execution-level learning edge** — accepted runtime result에서 확인된 원인/constraint를 다음 실행의 splitter/planner로 되돌려 graph shape 또는 작업 분해에 반영하는 공통 계약. 이는 founder verdict를 영속화하는 governance-level learning과 다른 runtime orchestration 문제입니다.
+
+즉 **graph topology / fan-out / deterministic node / mandatory human gate는 v3.x가 이미 흡수했고, reversibility 기반 AI 판정 / persistent decision authority는 `feature/spec-review-authority-chain`이 이미 흡수했습니다. 현재 비교에서 남는 신규 축은 runtime execution feedback edge의 일반화**입니다.
+
+참고로 `secure-file-upload`는 v3.x 템플릿의 `orchestration-mode-selection.md`와 dynamic workflow 계층을 실제 스캐폴딩 결과로 보존하고 있습니다. 반면 `pillwriter`는 바이너리는 v3.x 계열이지만 템플릿이 v2.x 계열이라 동일한 `orchestration-mode-selection.md` 파일이 존재하지 않아, 현재 구조 차이를 확인하는 legacy baseline 역할을 합니다. PillWriter에서 발전시킨 AI 판단 설계의 domain-agnostic 형태는 DHAA `feature/spec-review-authority-chain` 브랜치에 보존되어 있습니다.
 
 ---
 
 ## 4. 외부 조사로 드러난 공백
 
-세 프레임워크를 비교한 결과, MoAI-ADK에 **구조적으로 비어 있는 축**은 다음과 같습니다.
+세 프레임워크와 위의 DHAA 실험 브랜치를 비교한 결과, **아직 별도 검토 가치가 있는 축**은 다음과 같습니다.
 
 | 공백 | 설명 | 참고 출처 |
 |---|---|---|
@@ -126,8 +129,7 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 | 컨텍스트 계층화 | 단일 CLAUDE.md 로드. 디렉토리별 컨텍스트 분할 개념 없음 | [OmO — `/init-deep`](oh-my-openagent.md) |
 | MCP 수명 관리 | `.mcp.json` 상시 등록 → 컨텍스트 비용 항상 지불 | [OmO — 스킬 임베디드 MCP](oh-my-openagent.md) |
 | 단일 하네스 종속 | Claude Code 전용 (+ GLM CG 모드) | [ECC](ecc.md), [OmO](oh-my-openagent.md) |
-| graph feedback protocol | correction edge / learning edge가 공통 `UNIT + VERDICT + REASON + EVIDENCE + SCOPE` 계약과 persistent constraint 승격 규칙으로 정형화되어 있지 않음 | 외부 agent graph pattern 교차 검증 |
-| blast-radius gate | gate가 존재하지만 변경의 되돌림 가능성·공유 반경·운영 피해 규모를 기준으로 gate 강도를 자동 선택하는 공통 taxonomy는 확인되지 않음 | 외부 agent graph pattern 교차 검증 |
+| execution feedback-edge protocol | failed unit scoped retry와 accepted runtime result → upstream execution constraint를 공통 graph contract로 정형화한 SSOT는 확인되지 않음. authority/reversibility 판단과 persistent founder decision reuse는 `feature/spec-review-authority-chain`에서 별도 해결됨 | 외부 agent graph pattern 교차 검증 |
 
 ---
 
