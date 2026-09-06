@@ -3,7 +3,7 @@
 > 이 문서는 MoAI-ADK 사용 설명서가 아니라, **외부 프레임워크와 비교할 때 쓰는 기준선** 정리입니다.
 > 상세 규칙의 정본은 `projects/CLAUDE.md`와 `.claude/rules/moai/`입니다.
 
-작성일: 2026-07-29 · 근거: 세션에 로드된 CLAUDE.md, `.claude/rules/moai/**`, `development_pipeline_guideline.md`
+작성일: 2026-07-29 · 2026-09 최신 교차검증: MoAI-ADK v3.x, `secure-file-upload`, DHAA `feature/spec-review-authority-chain`, PillWriter `main`
 
 ---
 
@@ -34,12 +34,30 @@ EARS 형식 요구사항, REQ ID, HISTORY 기반 버전 범프.
 | 단계 | 담당 | 성격 |
 |---|---|---|
 | Stage 1 | plan-auditor | 기계 검증 — 답이 문서 안에 있음. 완전 자동화 |
-| Stage 2 | spec-interrogator | 적대적 심문 — 판단 지점을 flag만 하고 **절대 답하지 않음** |
+| Stage 2 | spec-interrogator | 적대적 심문 — 판단 지점을 flag하되 답을 대신 내리지 않음 |
 | Stage 3 | 오케스트레이터 | founder 확정 항목만 반영 (confirmed-only) |
 
 게이트 규칙:
-- founder 판정이 없는 항목은 Stage 3에서 손대지 않는다.
+- founder 판정이 필요한 항목은 founder verdict 없이 Stage 3에서 손대지 않는다.
 - Stage 2 flag 0건은 "통과"가 아니라 "이 모델이 놓쳤을 수 있음"으로 취급한다.
+- 최신 PillWriter `main`에서는 Stage 2의 불확실성을 다시 **empirical / normative / engineering / mixed**로 분류하고, 측정으로 답할 수 있는 사실 질문은 founder interview가 아니라 evidence route로 보낸다.
+
+### 최신 PillWriter `main`의 SPEC review 확장 — evidence-first class gate
+
+PillWriter의 현재 `main`은 DHAA `feature/spec-review-authority-chain`에 보존된 초기 domain-agnostic authority 설계보다 한 단계 더 발전했습니다. 2026-09-06 기준 커밋 `e5c077d`에서 `spec-review-authority` §5.6, `review-index-lint`, `spec-interrogator` class hint가 추가되어 **"문서 밖의 답"을 founder 판단과 empirical fact로 다시 분리**합니다.
+
+핵심 추가점:
+
+| 최신 PillWriter `main` | 의미 |
+|---|---|
+| `EMPIRICAL / NORMATIVE / ENGINEERING / MIXED` class hint | Stage 2가 발견한 불확실성의 성질을 먼저 분류 |
+| `EVIDENCE-RESOLVED` | 실제 데이터·probe·test가 empirical question을 이미 답하면 founder에게 묻지 않음 |
+| `ENGINEERING-RESOLVED` | product/UX/contract semantics 영향이 없는 순수 구현 선택을 기존 architecture·convention·engineering evidence로 해소 |
+| `IMPLEMENTATION-GAP` | evidence가 normative requirement와 충돌하면 requirement를 자동 변경하지 않고 engineering investigation으로 라우팅 |
+| `class-gate` | evidence가 답할 문제를 founder decision으로 잘못 승격시키는 것을 방지 |
+| `review-index-lint.js` | resolved class가 interview queue로 회귀하지 않는지 review artifact를 기계적으로 검증 |
+
+여기서 중요한 경계는 **"Evidence has authority over facts, never over requirements"**입니다. 측정은 현실이 무엇인지 닫을 수 있지만 제품이 무엇을 해야 하는지는 정하지 않습니다. 즉 evidence-first routing은 AI에게 제품 결정권을 주는 자동판정이 아니라, **사실 문제를 evidence로 닫아 founder의 판단 예산을 normative decision에만 쓰도록 하는 authority-preserving gate**입니다.
 
 ### 추적성 계층
 
@@ -101,24 +119,42 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 
 또한 agentless pipeline은 graph 안의 모든 node를 모델로 만들 필요가 없다는 원칙과 대응합니다. localize → repair → validate처럼 순서가 deterministic한 경우 LLM dispatcher를 쓰지 않고, Agent 호출이 있더라도 phase 내부 executor로만 제한합니다.
 
-추가로 DHAA의 `feature/spec-review-authority-chain` 브랜치에는 **AI 판단의 authority / risk gate가 이미 별도 계층으로 설계되어 있습니다.** `decision-index`가 `Impact`와 `Reversibility`를 기록하고, `EASY_REVERSIBLE / COSTLY_REVERSIBLE / HARD_TO_REVERSE / UNKNOWN`으로 되돌림 비용을 분류하며, destructive/irreversible·costly-reversible·data migration·persistence/public API contract 같은 항목은 `FOUNDER` 또는 `EVIDENCE-NEEDED`에서 시작합니다. 불확실한 경우에는 `When uncertain, escalate. Never downgrade.` 원칙으로 보수적으로 인간 판정으로 올립니다.
+### 3.2 세 저장소가 현재 흡수한 레이어
 
-또한 이전 founder verdict를 `DECIDED`, 명시적 PRD/ADR/engineering policy를 `POLICY-COVERED`로 재사용하므로, **governance-level learning / persistent authority reuse** 역시 이미 이 설계에 포함되어 있습니다. 따라서 외부 글의 `blast-radius gate`와 "확정된 판단을 다음 판단의 constraint로 재사용"하는 아이디어는 DHAA의 신규 공백으로 보지 않습니다.
+현재 비교에서는 세 구현을 같은 것으로 보지 않고 **서로 다른 레이어의 증거**로 사용합니다.
 
-`secure-file-upload`의 v3.x orchestration layer와 `feature/spec-review-authority-chain`의 AI 판정 layer를 제외하고 남는 공백은 **execution graph 자체의 feedback-edge protocol**입니다.
+| Source | 현재 역할 | 이미 흡수된 것 |
+|---|---|---|
+| `secure-file-upload` | MoAI v3.x **execution topology baseline** | `direct / serial / fanout / sweep`, dynamic workflow, deterministic agentless path, mandatory human gate |
+| DHAA `feature/spec-review-authority-chain` | **domain-agnostic decision-authority baseline** | `DECIDED / POLICY-COVERED / EVIDENCE-NEEDED / FOUNDER`, Impact/Reversibility, conservative escalation, founder verdict persistence |
+| PillWriter `main` | **latest evolved SPEC-review implementation** | empirical-vs-normative separation, `EVIDENCE-RESOLVED`, `ENGINEERING-RESOLVED`, `IMPLEMENTATION-GAP`, `class-gate`, review-index lint |
+
+이 구분 때문에 PillWriter를 단순히 "v2.x legacy baseline"이라고만 부르는 것은 이제 부정확합니다. **MoAI template topology 관점에서는 legacy baseline**이 맞지만, **local SPEC-review governance 관점에서는 오히려 가장 최신 구현**입니다.
+
+DHAA authority-chain이 이미 `Impact`와 `Reversibility`를 기록하고, `EASY_REVERSIBLE / COSTLY_REVERSIBLE / HARD_TO_REVERSE / UNKNOWN`으로 되돌림 비용을 분류하며, destructive/irreversible·costly-reversible·data migration·persistence/public API contract 같은 항목을 `FOUNDER` 또는 `EVIDENCE-NEEDED`에서 시작시키므로, 외부 글의 risk/blast-radius 아이디어 중 **decision governance 층**은 이미 상당 부분 흡수되어 있습니다. 불확실한 경우에는 `When uncertain, escalate. Never downgrade.` 원칙으로 인간 판정으로 올립니다.
+
+또한 이전 founder verdict를 `DECIDED`, 명시적 PRD/ADR/engineering policy를 `POLICY-COVERED`로 재사용하므로 **governance-level learning / persistent authority reuse**도 이미 해결되어 있습니다. 여기에 최신 PillWriter `main`은 empirical fact를 evidence로 닫고 engineering-only question을 founder interview에서 제거하는 class gate까지 추가했습니다.
+
+따라서 이제 제외해야 할 영역은 세 묶음입니다.
+
+1. `secure-file-upload` / MoAI v3.x가 이미 가진 **execution graph topology**
+2. DHAA authority-chain이 이미 가진 **reversibility / authority / persistent founder-decision governance**
+3. PillWriter `main`이 이미 가진 **evidence-first SPEC triage / engineering resolution / implementation-gap routing**
+
+이 셋을 제외하고 남는 공백은 **execution graph 자체의 feedback-edge protocol**입니다.
 
 1. **Execution-level correction edge** — 실패한 `UNIT` 하나만 `{VERDICT, REASON, EVIDENCE, SCOPE}` 같은 구조화된 failure context와 함께 producer node로 반환하고, 전체 batch가 아니라 해당 unit만 scoped retry하는 공통 계약.
-2. **Execution-level learning edge** — accepted runtime result에서 확인된 원인/constraint를 다음 실행의 splitter/planner로 되돌려 graph shape 또는 작업 분해에 반영하는 공통 계약. 이는 founder verdict를 영속화하는 governance-level learning과 다른 runtime orchestration 문제입니다.
+2. **Execution-level learning edge** — accepted runtime result에서 확인된 원인/constraint를 다음 실행의 splitter/planner로 되돌려 graph shape 또는 작업 분해에 반영하는 공통 계약.
 
-즉 **graph topology / fan-out / deterministic node / mandatory human gate는 v3.x가 이미 흡수했고, reversibility 기반 AI 판정 / persistent decision authority는 `feature/spec-review-authority-chain`이 이미 흡수했습니다. 현재 비교에서 남는 신규 축은 runtime execution feedback edge의 일반화**입니다.
+두 번째는 특히 PillWriter의 evidence-first class gate와 구분해야 합니다. PillWriter는 **"이 질문을 누가/무엇이 답할 권한이 있는가"**를 정교하게 라우팅하지만, 확인된 runtime evidence를 **다음 run의 splitter/planner constraint로 자동 승격하여 execution topology 자체를 바꾸는 공통 protocol**까지 정의한 것은 아닙니다. 마찬가지로 `IMPLEMENTATION-GAP`은 engineering investigation으로 보내는 governance route이지, failed execution unit을 producer node로 되돌리는 graph edge contract 자체는 아닙니다.
 
-참고로 `secure-file-upload`는 v3.x 템플릿의 `orchestration-mode-selection.md`와 dynamic workflow 계층을 실제 스캐폴딩 결과로 보존하고 있습니다. 반면 `pillwriter`는 바이너리는 v3.x 계열이지만 템플릿이 v2.x 계열이라 동일한 `orchestration-mode-selection.md` 파일이 존재하지 않아, 현재 구조 차이를 확인하는 legacy baseline 역할을 합니다. PillWriter에서 발전시킨 AI 판단 설계의 domain-agnostic 형태는 DHAA `feature/spec-review-authority-chain` 브랜치에 보존되어 있습니다.
+즉 현재 최신 교차검증 기준으로 **graph topology + human gate는 MoAI v3/secure-file-upload, decision authority + reversibility는 DHAA authority-chain, evidence-first SPEC resolution은 PillWriter main이 이미 흡수**했습니다. 남는 신규 축은 runtime execution feedback edge의 일반화입니다.
 
 ---
 
 ## 4. 외부 조사로 드러난 공백
 
-세 프레임워크와 위의 DHAA 실험 브랜치를 비교한 결과, **아직 별도 검토 가치가 있는 축**은 다음과 같습니다.
+MoAI v3.x, `secure-file-upload`, DHAA authority-chain, 최신 PillWriter `main`까지 교차 검증한 결과, **아직 별도 검토 가치가 있는 축**은 다음과 같습니다.
 
 | 공백 | 설명 | 참고 출처 |
 |---|---|---|
@@ -129,7 +165,7 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 | 컨텍스트 계층화 | 단일 CLAUDE.md 로드. 디렉토리별 컨텍스트 분할 개념 없음 | [OmO — `/init-deep`](oh-my-openagent.md) |
 | MCP 수명 관리 | `.mcp.json` 상시 등록 → 컨텍스트 비용 항상 지불 | [OmO — 스킬 임베디드 MCP](oh-my-openagent.md) |
 | 단일 하네스 종속 | Claude Code 전용 (+ GLM CG 모드) | [ECC](ecc.md), [OmO](oh-my-openagent.md) |
-| execution feedback-edge protocol | failed unit scoped retry와 accepted runtime result → upstream execution constraint를 공통 graph contract로 정형화한 SSOT는 확인되지 않음. authority/reversibility 판단과 persistent founder decision reuse는 `feature/spec-review-authority-chain`에서 별도 해결됨 | 외부 agent graph pattern 교차 검증 |
+| execution feedback-edge protocol | failed `UNIT` scoped retry와 accepted runtime result → reusable splitter/planner constraint를 공통 graph contract로 정형화한 SSOT는 확인되지 않음. authority/reversibility는 DHAA authority-chain, evidence/engineering resolution은 PillWriter `main`에서 별도 해결됨 | 외부 agent graph pattern 교차 검증 |
 
 ---
 
@@ -138,6 +174,6 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 공백은 있지만 **교체 사유는 아닙니다.**
 
 ECC와 OmO 어느 쪽으로 가도 SPEC 문서 생명주기·추적성·리뷰 파이프라인을 통째로 잃습니다.
-PillWriter는 SPEC 문서 세트가 자산인 프로젝트이므로 그 손실이 이득보다 큽니다.
+PillWriter는 SPEC 문서 세트와 그 위에 발전시킨 evidence-first review governance가 자산인 프로젝트이므로 그 손실이 이득보다 큽니다.
 
-올바른 방향은 **레이어별 부분 이식**입니다. 우선순위는 [README.md](README.md)의 이식 후보 표를 참조하십시오.
+올바른 방향은 **레이어별 부분 이식**입니다. 현재 agent-graph 관점의 신규 검토 대상은 이미 흡수된 topology/authority/class-gate를 재구현하는 것이 아니라, **execution-level correction edge와 learning edge를 공통 protocol로 만들 가치가 있는지** 검증하는 것입니다. 우선순위는 [README.md](README.md)의 이식 후보 표를 참조하십시오.
