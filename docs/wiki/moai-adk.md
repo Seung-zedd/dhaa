@@ -76,6 +76,41 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 | 병렬 | Agent Teams + worktree isolation. 역할별 HARD 룰로 강제 |
 | 다중 모델 | CG 모드 — tmux 세션 env 격리로 리더는 Claude, 팀원은 GLM |
 
+### 3.1 v3.x orchestration topology — loop보다 위의 graph 레이어
+
+2026-09 교차 검증 기준으로, **현재 v3.x 템플릿에는 이미 "개별 에이전트 루프"보다 상위의 orchestration graph 개념이 실질적으로 들어와 있습니다.** 다만 `Splitter / Worker / Code node / Gate`, `correction edge / learning edge`, `blast-radius gate`라는 용어로 통합 모델링되어 있지는 않습니다.
+
+핵심은 다음 두 축의 분리입니다.
+
+- **Node 내부 loop**: 한 단위의 작업을 수행하고 검증하며 필요 시 다시 실행하는 수렴 루프.
+- **Node 사이 graph**: 어떤 작업을 직렬/병렬/대규모 fan-out으로 배치할지, 어느 지점에서 human gate를 둘지, 어떤 검증 결과가 다음 단계 진입을 막을지 결정하는 orchestration topology.
+
+현재 v3.x 템플릿의 직접 대응 요소:
+
+| Graph 관점 | MoAI-ADK v3.x 대응 |
+|---|---|
+| 작업 분할 / 실행 shape 선택 | Phase 4 `direct / serial / fanout / sweep` mode-selection decision tree |
+| 병렬 worker fan-out | `fanout`: multi-domain research/review에서 여러 `Agent()`를 한 턴에 병렬 spawn |
+| 대규모 mechanical graph | `sweep`: uniform transform + no inter-file dependency 조건에서 workflow fan-out |
+| deterministic code path | `/moai fix`, `/moai mx`, `/moai codemaps`, `/moai clean`의 agentless pipeline — LLM이 phase order를 결정하지 않음 |
+| gate / verdict | plan-auditor, sync-auditor, audit gate, must-pass firewall, FAIL/INCONCLUSIVE 처리 |
+| human gate | Implementation Kickoff Approval은 score와 무관하게 mandatory이며 fan-out/sweep가 우회할 수 없음 |
+| scope preservation | out-of-scope untouched acceptance, bounded retry 및 SPEC scope 규율 |
+
+특히 v3.x에서는 **"good loop on the wrong shape" 문제를 줄이기 위해 실행 shape를 먼저 분류**합니다. trivial은 `direct`, coding-heavy는 보수적으로 `serial`, multi-domain research-heavy는 `fanout`, 대규모 uniform mechanical transform만 `sweep`로 보내며, 경계에서는 더 단순한 모드를 우선합니다. 즉 병렬성 자체가 목적이 아니라 **dependency와 작업 성질에 맞는 graph shape 선택**이 목적입니다.
+
+또한 agentless pipeline은 graph 안의 모든 node를 모델로 만들 필요가 없다는 원칙과 대응합니다. localize → repair → validate처럼 순서가 deterministic한 경우 LLM dispatcher를 쓰지 않고, Agent 호출이 있더라도 phase 내부 executor로만 제한합니다.
+
+다만 다음 세 항목은 현재 교차 검증한 v3.x 템플릿에서 **명시적 SSOT로 확인되지 않았습니다.**
+
+1. **Correction edge의 정형화** — 실패한 `UNIT` 하나만 `{VERDICT, REASON, EVIDENCE, SCOPE}`와 함께 producer node로 반환하는 공통 계약.
+2. **Learning edge의 정형화** — 승인된 결과의 원인을 다음 run의 splitter/plan constraint로 승격시키는 공통 feedback contract.
+3. **Blast-radius 기반 gate taxonomy** — 모델 confidence 대신 reversible/contained, wide shared-surface, hard-to-reverse 같은 변경 반경과 되돌림 비용으로 gate 강도를 선택하는 일관된 정책.
+
+즉 **v3.x는 graph topology, fan-out, deterministic node, human gate까지는 이미 상당 부분 흡수했지만, feedback edge와 risk-based gate를 하나의 일반화된 graph protocol로 묶는 단계까지는 아직 가지 않은 상태**로 보는 것이 정확합니다.
+
+참고로 `secure-file-upload`는 v3.x 템플릿의 `orchestration-mode-selection.md`와 dynamic workflow 계층을 실제 스캐폴딩 결과로 보존하고 있습니다. 반면 `pillwriter`는 바이너리는 v3.x 계열이지만 템플릿이 v2.x 계열이라 동일한 `orchestration-mode-selection.md` 파일이 존재하지 않아, 현재 구조 차이를 확인하는 legacy baseline 역할을 합니다.
+
 ---
 
 ## 4. 외부 조사로 드러난 공백
@@ -91,6 +126,8 @@ Tested(85%+) / Readable / Unified / Secured / Trackable.
 | 컨텍스트 계층화 | 단일 CLAUDE.md 로드. 디렉토리별 컨텍스트 분할 개념 없음 | [OmO — `/init-deep`](oh-my-openagent.md) |
 | MCP 수명 관리 | `.mcp.json` 상시 등록 → 컨텍스트 비용 항상 지불 | [OmO — 스킬 임베디드 MCP](oh-my-openagent.md) |
 | 단일 하네스 종속 | Claude Code 전용 (+ GLM CG 모드) | [ECC](ecc.md), [OmO](oh-my-openagent.md) |
+| graph feedback protocol | correction edge / learning edge가 공통 `UNIT + VERDICT + REASON + EVIDENCE + SCOPE` 계약과 persistent constraint 승격 규칙으로 정형화되어 있지 않음 | 외부 agent graph pattern 교차 검증 |
+| blast-radius gate | gate가 존재하지만 변경의 되돌림 가능성·공유 반경·운영 피해 규모를 기준으로 gate 강도를 자동 선택하는 공통 taxonomy는 확인되지 않음 | 외부 agent graph pattern 교차 검증 |
 
 ---
 
