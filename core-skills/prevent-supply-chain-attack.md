@@ -98,3 +98,35 @@ When executed, the script safely performs the following 8 checks in a temporary 
 2. **Perform Pre-inspection**: Before installing any library — including one proposed by Claude Code — run `pkg-check <package_name>` first.
 3. **Review Results**: If no errors or warnings are found, proceed with confidence by running `npm install <package_name>`.
 4. **Regular Audits**: Whenever updating libraries, pass the target version to inspect it (`pkg-check <package_name> <version>`).
+
+---
+
+## 6. Automated PreToolUse Hook (Claude Code sessions only)
+
+Inside a Claude Code session, `pnpm add` / `npm install` / `npm add` / `npm i` / `yarn add` commands
+are additionally gated by a `PreToolUse` hook — `.claude/hooks/moai/pkg-add-guard.sh`, wired in
+`.claude/settings.json` on the `Bash` matcher. It fires before the shell command actually runs.
+
+This is **not** the same check as `pkg-check` above — it is a fast subset built to run
+synchronously before every install without becoming a bottleneck (registry metadata lookup +
+lifecycle-script scan only, no `pnpm audit`, no lockfile generation, roughly 2-3 seconds per
+package). It:
+
+- Extracts every package name/version from the command, including multiple packages in one
+  call, scoped packages (`@scope/pkg@1.2.3`), and chained commands (`cd app && pnpm add x`)
+- Auto-**denies** the install only on an exact match against the historically-hijacked list in
+  Section 4, step 5 above
+- Auto-**asks** for confirmation when the package declares a lifecycle script (`preinstall`,
+  `install`, `postinstall`, `prepare`, `prepublish`, `prepublishOnly`) or the registry lookup
+  fails/times out
+- Otherwise allows the install silently
+
+Run the full `pkg-check <package> [version]` manually whenever the hook flags something, or
+before installing anything unfamiliar regardless of what the hook decides — it is a tripwire,
+not a replacement for judgment.
+
+**Portability**: the guard script is vendored under `.claude/hooks/moai/` (never referenced by
+an absolute machine-specific path), so it works unmodified in any repo that inherits this
+`.claude/` tree — no per-machine configuration needed. Settings edits to `.claude/settings.json`
+made mid-session require reopening `/hooks` once, or a session restart, before Claude Code's
+file watcher picks them up.
