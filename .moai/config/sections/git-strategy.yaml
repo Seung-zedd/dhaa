@@ -1,13 +1,11 @@
 # Git Strategy Settings
 # Workflow configuration for Manual/Personal/Team modes
-
 git_strategy:
-  mode: "manual"                # manual, personal, team
-  provider: "github"          # github, gitlab
-  github_username: ""  # GitHub username (for personal/team modes)
+  mode: "manual" # manual, personal, team
+  provider: "github" # github, gitlab
+  github_username: "" # GitHub username (for personal/team modes)
   gitlab:
-    instance_url: ""  # GitLab instance URL
-
+    instance_url: "" # GitLab instance URL
   # Manual Mode Settings (Local Git)
   manual:
     workflow: github-flow
@@ -15,30 +13,26 @@ git_strategy:
     github_integration: false
     auto_checkpoint: disabled
     push_to_remote: false
-
+    merge_method: squash # PR merge method: squash, merge, rebase
     # Branch creation policy
     branch_creation:
-      prompt_always: true       # Always ask before creating branch
-      auto_enabled: false       # Do not auto-create branches
-
+      prompt_always: true # Always ask before creating branch
+      auto_enabled: false # Do not auto-create branches
     # Automation settings
     automation:
       auto_branch: false
       auto_commit: true
       auto_pr: false
       auto_push: false
-
     # Git hooks policy
     hooks:
-      pre_commit: enforce       # enforce, warn, skip
+      pre_commit: enforce # enforce, warn, skip
       pre_push: warn
       commit_msg: warn
-
     # Commit message style
     commit_style:
-      format: conventional      # conventional, simple
+      format: conventional # conventional, simple
       scope_required: false
-
   # Personal Mode Settings (GitHub Individual)
   personal:
     workflow: github-flow
@@ -47,31 +41,30 @@ git_strategy:
     push_to_remote: true
     branch_prefix: "feature/SPEC-"
     main_branch: main
-
+    merge_method: squash # PR merge method: squash, merge, rebase
     # Branch creation policy
     branch_creation:
-      prompt_always: true         # Ask before creating branch (default: prompt)
-      auto_enabled: false         # Do not auto-create branches (default: disabled)
-
+      prompt_always: true # Ask before creating branch (default: prompt)
+      auto_enabled: false # Do not auto-create branches (default: disabled)
     # Automation settings
     automation:
-      auto_branch: false          # Do not auto-create branches (default: disabled)
+      auto_branch: false # Do not auto-create branches (default: disabled)
       auto_commit: true
-      auto_pr: false              # Manual PR for review (default: disabled)
-      auto_push: false            # Do not auto-push (default: disabled)
-
+      auto_pr: false # Manual PR for review (default: disabled)
+      auto_push: false # Do not auto-push (default: disabled)
     # Git hooks policy
     hooks:
       pre_commit: enforce
       pre_push: warn
       commit_msg: warn
-
     # Commit message style
     commit_style:
       format: conventional
       scope_required: false
-
   # Team Mode Settings (GitHub Team)
+  # Late-branch default policy:
+  # auto_branch/auto_pr/auto_enabled default to false; prompt_always defaults to true.
+  # Users opting back to auto-branch can set auto_enabled: true.
   team:
     workflow: github-flow
     environment: github
@@ -82,26 +75,23 @@ git_strategy:
     draft_pr: true
     required_reviews: 1
     branch_protection: true
-
+    merge_method: squash # PR merge method: squash, merge, rebase
     # Branch creation policy
     branch_creation:
       prompt_always: false
       auto_enabled: true
-
     # Automation settings
     automation:
       auto_branch: true
       auto_commit: true
       auto_pr: true
       auto_push: true
-
     # Git hooks policy
     hooks:
       pre_commit: enforce
       pre_push: warn
       commit_msg: warn
-
     # Commit message style
     commit_style:
       format: conventional
-      scope_required: true      # Required for team projects
+      scope_required: true # Required for team projects
