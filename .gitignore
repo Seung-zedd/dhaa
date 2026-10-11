@@ -242,3 +242,7 @@ prevent-supply-chain-attack-gemini.md
 .moai/reports/
 .moai/state/
 .moai/plans/
+.moai/backup/
+.moai/backups/
+.moai/branches/
+.moai/cache/
