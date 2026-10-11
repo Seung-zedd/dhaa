@@ -15,10 +15,10 @@
 - `skills/RECOMMEND_WORKFLOW_CHAIN.md` (프로젝트 진행 단계별 MoAI 명령어 체인 라우팅 — 신규 기능/버그 수정/리팩토링/문서 갱신 워크플로우 자동 선택)
 
 1. **독립형 오픈소스 및 클라우드 툴체인 (Platform-Agnostic Tools)**:
-   - **기초 UI 및 대시보드 프로토타이핑**: `Pencil MCP Server` (구글 Pro 멤버십이 2026. 09. 23. 종료됨에 따라, 레이아웃 와이어프레임 설계 및 인터랙티브 구조 파악용 기초 도구로 제한 사용)
-   - **고도화 UI 디자인 시스템 구축**: 구글 `나노바나나` (`https://stitch.withgoogle.com/`) -> 컴포넌트의 시각적 완성도를 극대화하고 고품질 UI 스타일 가이드를 에이전트에 피딩하기 위한 메인 디자인 스킬로 연동
-     - **예외 가드레일 (Usage Limit 등 API 에러 발생 시)**: 에이전트 런타임 중 구글 계정 토큰 만료나 사용량 제한(Usage Limit) 에러가 감지되면, 에이전트는 즉시 프로세스를 일시정지하고 사용자에게 수동 액션을 요청하는 알림을 띄운다.
-     - **사용자 수동 가이드 프롬프트**: *"현재 구글 디자인 서버의 호출 제한 또는 세션 만료가 감지되었습니다. 개발자님, 브라우저를 열고 Pro 멤버십이 활성화된 계정 세션 주소인 `https://stitch.withgoogle.com/u/1/?pli=1` 로 직접 접속하여 인증 상태를 갱신해 주세요."* 문구를 명시하고 검증 대기 상태로 전환한다.
+   - **UI/UX 디자인 명세 우선 (Design-Spec First)**: 웹/앱 UI·UX를 구현하기 전에 구조화된 디자인 명세를 먼저 정의한다. 디자인 명세에는 최소한 **layout, component hierarchy, design tokens(color/typography/spacing), responsive behavior, interaction/state**를 포함한다. 명세를 작성하는 수단은 특정 디자인 도구에 종속되지 않는 implementation detail로 취급한다.
+   - **선택적 외부 디자인 도구 (Optional)**: 디자인 명세의 시각화·고도화가 필요한 경우에만 외부 디자인 도구를 선택적으로 사용할 수 있다. 특정 vendor/제품을 기본값이나 필수 도구로 지정하지 않으며, 도구 산출물은 위 디자인 명세 형식으로 정리하여 에이전트에 주입한다.
+     - **예외 가드레일 (외부 디자인 도구를 실제로 사용하는 경우에만 적용)**: 에이전트 런타임 중 해당 도구의 인증 만료나 사용량 제한(Usage Limit) 에러가 감지되면, 에이전트는 즉시 프로세스를 일시정지하고 사용자에게 수동 액션을 요청하는 알림을 띄운다.
+     - **사용자 수동 가이드 프롬프트**: *"현재 외부 디자인 도구의 호출 제한 또는 세션 만료가 감지되었습니다. 개발자님, 해당 도구의 계정 세션에 직접 접속하여 인증 상태를 갱신해 주세요."* 문구를 명시하고 검증 대기 상태로 전환한다.
    - **UI 비전 및 E2E 통제**: `Playwright CLI` + `ui-ux-pro-max-skill` (모바일 뷰포트 레이아웃 최종 무결성 스캔, 클릭 자율 테스트 수행 및 레이아웃 깨짐 교정)
    - **자가 치유 런타임**: 테스트 러너 로그 파서 스킬을 연동하여 `moai loop` 구동 시 런타임 콘솔 에러 자동 트래킹 및 자가 교정
    - **성능 게이트**: `k6` 또는 `Lighthouse CLI`를 통해 API 및 웹훅 라우팅 지연 시간을 계측하고, 임계치 초과 시 `moai fix` 자동 트리거
@@ -49,6 +49,7 @@
        - **[필독] 설정 수정 후 반드시 세션 재시작**: `statusLine` 블록은 **세션 시작 시점에만 로드되고 실행 중에는 핫리로드되지 않는다.** 따라서 이미 열려 있는 세션에서 `settings.json`을 고쳐도 상태줄은 그대로 안 뜬다 — 파일이 올바르게 고쳐져 있어도 화면에 반영되려면 세션을 한 번 종료 후 재시작(`/exit` → `moai cc`)해야 한다. **"상태줄이 안 뜬다"는 증상의 1순위 원인은 설정 오류가 아니라 이 세션 미리로드다.** 진단 순서: (1) `.claude/settings.json`의 `statusLine.command`가 `npx -y ccstatusline@latest`인지 확인 → (2) 해당 앱 폴더에서 `echo '{"model":{"display_name":"Opus 5"}}' | npx -y ccstatusline@latest` 로 명령 자체가 출력을 내는지 확인 → (3) 둘 다 정상인데 화면에 없으면 **세션 재시작**이 해답 → (4) 그래도 안 뜨면 `settings.json`의 `env.PATH`(아래 제3원인 항목)를 점검하고, 마지막으로 `~/.config/ccstatusline/` 전역 설정 충돌을 의심한다.
        - **[필독] 제3의 근본 원인 — env.PATH에 Node.js 누락 (확인됨, 2026-07-05 pillwriter 트러블슈팅)**: `.claude/settings.json`의 `env.PATH` 오버라이드에 Node.js/npm 경로가 빠져 있으면, Claude Code가 statusLine 서브프로세스에 이 PATH를 주입하므로 `npx -y ccstatusline@latest`가 `npx: command not found`(exit 127)로 죽어 상태줄이 **0바이트 출력 → 아예 렌더링되지 않는다**. `npx`는 `C:\Program Files\nodejs`와 `C:\Users\username\AppData\Roaming\npm`에만 존재한다. 같은 PATH 문제의 부수 피해로 `moai.exe`도 해석 불가가 되어 26개 moai 훅 래퍼가 **에러 없이 조용히 no-op** 된다(MoAI 컨텍스트 주입 소실 — SessionStart는 exit 0으로 성공처럼 보임). 해결: 앱 `settings.json`의 `env.PATH`를 컨테이너 `projects/.claude/settings.json`의 검증된 값(`C:\Users\username\AppData\Roaming\npm;C:\Users\username\AppData\Local\Programs\moai;…`로 시작, `/c/Program Files/nodejs` 포함)으로 교체 후 세션 재시작. 진단 시 함정: 터미널에서 직접 돌리는 위 (2)번 테스트는 터미널의 온전한 PATH를 쓰므로 이 원인을 **놓친다** — 반드시 `settings.json`의 PATH 값을 환경변수로 넣고 **새 bash.exe를 스폰**해 테스트한다(이미 실행 중인 bash 안에서 `env PATH=...`로 덮으면 Windows 형식 PATH가 MSYS 변환되지 않아 가짜 음성이 나온다).
      - 주의: `moai update`는 템플릿을 다시 밀어넣으므로, 업데이트는 앱이 아니라 **컨테이너 `projects/`에서만** 수행한다. (앱에서 `moai update` 실행 시 `.moai/status_line.sh`와 엔진 복제본이 다시 생성되므로, 실행했다면 위 statusLine 고정·중복 제거를 재수행한다.)
+       - **[필독] 이 레포(dhaa)에서 `moai update` 실행 금지 (확인됨, 2026-10-11 moai-adk 3.1.2 dry-run)**: `moai update --dry-run --templates-only` 결과, 이 레포는 v2로 감지되어 **clean reinstall**이 계획된다 — 관리 경로 파일 431개 삭제 후 229개만 템플릿에서 재배포되고, **나머지 202개(에이전트 다수, `moai-workflow-design-context`, `moai-design-tools` 등)는 복원 없이 삭제**된다. 또한 내장 constitution v3.4.0이 §4 Phase Contracts에 `Path B2 (pencil-mcp)` 행을 다시 추가해 vendor-agnostic 정리(Pencil 제거)가 되돌려진다. 파일 안의 `LOCAL-EXT` 같은 마커로는 막을 수 없다(바이너리가 마커를 인식하지 않고 파일 단위로 삭제·교체함; `.moai/config`만 3-way merge로 보존). 불가피하게 실행해야 한다면: (1) 먼저 커밋 → (2) `moai update --dry-run`으로 계획 확인 → (3) 실행 후 `git status`/`git diff`로 전체 검토 후 원치 않는 변경은 `git restore` → (4) `git grep -i pencil` 결과가 변경 이력·버전 표기 줄뿐인지 확인한다.
   3. *(수동 작업)*: 기존에 빌드된 구글 독스 기반의 **`PRD.md`** 파일을 앱 폴더 루트에 배치
   4. **앱 폴더에서 Claude Code 세션을 연다**: 터미널에서 `cd my-new-app && moai cc` (`moai cc`가 Claude Code를 현재 폴더 기준으로 실행 → `$CLAUDE_PROJECT_DIR`가 앱을 가리켜 SPEC·리포트가 **앱 로컬 `.moai/`에** 쌓인다)
   5. 세션 안에서 `/moai project [프로젝트명]` 실행 (예: `/moai project 스마트 디톡스`)
@@ -69,8 +70,7 @@
 ### [3단계] 명세 기반 소스코드 구현
 
 - **명령어**: `moai run [스펙번호]`
-- **동작**: 분해된 `SPEC.md`와 `Pencil MCP Server`의 1차 레이아웃, 그리고 구글 `나노바나나` 가이드라인 및 `ui-ux-pro-max-skill` 컨벤션을 복합 참조하여 모바일 뷰포트/반응형 프런트엔드 컴포넌트와 백엔드 API를 기획 사양에 완벽히 일치하게 구현한다.
-  - 만약에 Pencil MCP Server가 활성화되지 않으면, 유저한테 Pencil 데스크탑 앱을 실행하라고 프롬프트로 명시할 것.
+- **동작**: 분해된 `SPEC.md`와 구조화된 디자인 명세(layout, component hierarchy, design tokens, responsive behavior, interaction/state), 그리고 `ui-ux-pro-max-skill` 컨벤션을 복합 참조하여 모바일 뷰포트/반응형 프런트엔드 컴포넌트와 백엔드 API를 기획 사양에 완벽히 일치하게 구현한다. 외부 디자인 도구는 필요한 경우에만 선택적으로 사용한다.
 
 ### [4단계] 자가 치유 및 무한 루프 검증
 
@@ -87,4 +87,4 @@
 ## 🔒 3. 품질 및 리소스 관리 가드레일 (Limits)
 
 - **토큰 최적화 통제 (Harness)**: 세션의 `ccstatusline` 게이지가 40~50% 임계치에 도달하면 즉시 수동 컴팩트(`/clear` 또는 `/compact`)를 트리거하여 불필요한 토큰 낭비를 원천 차단한다.
-- **UI 무결성 검증**: 컴포넌트 양산 시 `Pencil MCP`를 통해 뼈대를 잡고 `나노바나나` 연동 데이터로 고도화하여 시각적 무결성을 확보하며, `ui-ux-pro-max-skill` 가이드라인을 위반하는 레이아웃 깨짐이나 터치 영역 오버랩이 발견되면 즉시 `moai fix`로 자가 교정한다.
+- **UI 무결성 검증**: 컴포넌트 양산 시 디자인 명세(layout, design tokens, responsive behavior, interaction/state)를 기준으로 구현·검증하여 시각적 무결성을 확보하며, `ui-ux-pro-max-skill` 가이드라인을 위반하는 레이아웃 깨짐이나 터치 영역 오버랩이 발견되면 즉시 `moai fix`로 자가 교정한다.

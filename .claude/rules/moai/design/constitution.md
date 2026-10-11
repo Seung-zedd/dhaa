@@ -2,6 +2,7 @@
 
 ## HISTORY
 
+- 2026-10-11: Removed vendor-specific `pencil-plan.md` from Section 3.2 auto-load targets and truncation priority (vendor-agnostic design-spec-first principle). Version 3.3.0 → 3.3.1. Human-approved FROZEN amendment.
 - 2026-04-20 (SPEC-DESIGN-CONST-AMEND-001): Section 3 expanded to tripartite structure (3.1/3.2/3.3). Version 3.2.0 → 3.3.0 (v3.3.0). FROZEN zone extended to cover each subsection individually.
 - 2026-04-20: Relocated from `.claude/rules/agency/constitution.md` (v3.2.0) to `.claude/rules/moai/design/constitution.md` as part of SPEC-AGENCY-ABSORB-001 M1. Original path: `.claude/rules/agency/constitution.md`. No content changes. FROZEN zone and EVOLVABLE zone definitions are preserved verbatim.
 
@@ -70,12 +71,12 @@ Brand context is stored in `.moai/project/brand/` and initialized through the br
 
 Iteration-specific design briefs are stored in `.moai/design/`:
 
-- [HARD] `/moai design` MUST auto-load human-authored design documents (research.md, system.md, spec.md, pencil-plan.md) when present and not _TBD_
+- [HARD] `/moai design` MUST auto-load human-authored design documents (research.md, system.md, spec.md) when present and not _TBD_
 - [HARD] Design briefs MUST NOT override brand context — brand remains the constitutional parent
 - [HARD] `moai-workflow-design-import` continues to write machine-generated artifacts to `.moai/design/`; the exact set of reserved file paths is enumerated below — human-authored files must not collide with them
 - [HARD] Reserved file paths (canonical list): `tokens.json`, `components.json`, `assets/`, `import-warnings.json`, `brief/BRIEF-*.md`
 - [HARD] Token budget for auto-loading is bounded by `.moai/config/sections/design.yaml` `design_docs.token_budget`; when the key is absent, the system MUST default to 20000
-- [HARD] Priority order when truncation is needed: spec.md > system.md > research.md > pencil-plan.md
+- [HARD] Priority order when truncation is needed: spec.md > system.md > research.md
 
 ### 3.3 Relationship
 
@@ -396,9 +397,9 @@ If a graduated learning causes regression:
 
 ---
 
-Version: 3.3.0
+Version: 3.3.1
 Classification: FROZEN_AMENDMENT
 Original Source: agency/constitution.md v3.2.0
-Last Updated: 2026-04-20
+Last Updated: 2026-10-11
 Relocated: 2026-04-20 (SPEC-AGENCY-ABSORB-001 M1)
 REQ coverage: REQ-CONST-001, REQ-CONST-002, REQ-CONST-003, REQ-CONST-004

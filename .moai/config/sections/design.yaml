@@ -73,7 +73,7 @@ design:
     dir: ".moai/design"
     auto_load_on_design_command: true
     token_budget: 20000
-    priority: [spec, system, research, pencil-plan]
+    priority: [spec, system, research]
 
   # Pipeline adaptation weights (absorbed from agency adaptation config)
   adaptation:
