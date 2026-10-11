@@ -28,7 +28,6 @@ Standard MCP servers in MoAI-ADK:
 
 - context7: Library documentation lookup
 - sequential-thinking: Complex problem analysis
-- pencil: .pen file design editing. Used by expert-frontend (sub-agent mode) and team-designer (team mode).
 - claude-in-chrome: Browser automation
 
 MCP tools are deferred and must be loaded before use:

@@ -15,19 +15,17 @@ status: active
 
 # Design Systems Development Skill
 
-Enterprise design system implementation using W3C DTCG 2025.10 token standards, WCAG 2.2 accessibility compliance, and Pencil MCP automation workflows.
+Enterprise design system implementation using W3C DTCG 2025.10 token standards, and WCAG 2.2 accessibility compliance.
 
 Core Capabilities:
 - W3C DTCG 2025.10 design token architecture
 - WCAG 2.2 AA/AAA accessibility compliance
-- Pencil MCP integration for design-to-code workflows
 - Atomic Design component patterns
 - Storybook documentation and visual regression testing
 
 When to Use:
 - Setting up design token architecture for multi-platform projects
 - Implementing accessible component libraries
-- Automating design-to-code workflows with Pencil MCP
 - Building maintainable design systems with Storybook
 - Ensuring color contrast compliance and semantic token naming
 
@@ -39,7 +37,6 @@ Module Organization:
 Latest Standards (November 2025):
 - DTCG Specification: 2025.10 (first stable version)
 - WCAG Guidelines: 2.2 (AA: 4.5:1 text, AAA: 7:1 text)
-- Pencil MCP: .pen files with MCP auto-start
 - Style Dictionary: 4.0 (DTCG-compatible)
 - Storybook: 8.x (with Docs addon)
 
@@ -73,7 +70,6 @@ Latest Standards (November 2025):
 |------|---------|---------|---------------|
 | W3C DTCG | 2025.10 | Design token specification | https://designtokens.org |
 | Style Dictionary | 4.0+ | Token transformation engine | https://styledictionary.com |
-| Pencil MCP | Latest | Design-to-code automation | https://docs.pencil.dev |
 | Storybook | 8.x | Component documentation | https://storybook.js.org |
 | axe DevTools | Latest | Accessibility testing | https://www.deque.com/axe/devtools/ |
 | Chromatic | Latest | Visual regression testing | https://chromatic.com |
@@ -188,14 +184,6 @@ export default {
  }
 };
 ```
-
----
-
-## Pencil MCP Integration
-
-For Pencil MCP integration workflow, design token extraction, and .pen file handling, see:
-- Skill: moai-design-tools (reference/pencil-renderer.md)
-- Skill: moai-design-tools (reference/pencil-code.md)
 
 ---
 
@@ -323,7 +311,6 @@ For these cases, consider:
 
 - W3C DTCG: https://designtokens.org
 - WCAG 2.2: https://www.w3.org/WAI/WCAG22/quickref/
-- Pencil MCP: https://docs.pencil.dev
 - Style Dictionary: https://styledictionary.com
 - Storybook: https://storybook.js.org
 

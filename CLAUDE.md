@@ -488,7 +488,6 @@ MoAI-ADK integrates multiple MCP servers for specialized capabilities:
 - **UltraThink** (`ultrathink` keyword): Sets `effort: max` in Claude Code v2.1.110+. On Opus 4.7 and later (including Opus 5), this triggers Adaptive Thinking (dynamically allocated reasoning tokens, no fixed budget_tokens). For older models, maps to extended thinking with high budget. No MCP dependency — compatible with all APIs. Do NOT confuse with `--deepthink`.
 - **Adaptive Thinking** (Opus 4.7 and later, including Opus 5): the current Opus thinking mode. Unlike earlier models that use `budget_tokens`, Adaptive Thinking dynamically allocates reasoning based on task complexity. Triggered via `effort` level (high/xhigh/max) — not by `budget_tokens`. See Skill("moai-workflow-thinking").
 - **Context7**: Up-to-date library documentation lookup via resolve-library-id and get-library-docs.
-- **Pencil**: UI/UX design editing for .pen files (used by expert-frontend and designer teammates).
 - **claude-in-chrome**: Browser automation for web-based tasks.
 
 For MCP configuration and usage patterns, see .claude/rules/moai/core/settings-management.md.
