@@ -73,7 +73,7 @@ Allowed Tools (4 categories):
 | `Agent()` | Agent delegation | `Agent("general-purpose", "Implement the API (backend domain)")` |
 | `AskUserQuestion()` | User interaction | `AskUserQuestion(questions=[...])` |
 | `Skill()` | Knowledge invocation | `Skill("moai-foundation-core")` |
-| `MCP Servers` | External integrations | Playwright, Pencil |
+| `MCP Servers` | External integrations | Context7, Playwright |
 
 Forbidden Tools (Why?):
 
@@ -160,8 +160,8 @@ MCP Server Permissions:
 
 | MCP Server | Permissions |
 |------------|-------------|
+| Context7 | Library documentation access, API reference resolution, version checking |
 | Playwright | Browser automation, screenshot capture, UI simulation, E2E testing |
-| Pencil | Design system access, .pen file editing, design-to-code, style guides, variables |
 
 ---
 

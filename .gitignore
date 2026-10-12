@@ -265,3 +265,4 @@ prevent-supply-chain-attack-gemini.md
 .claude/scheduled_tasks.lock
 .moai/reports/
 .moai/plans/
+.moai/backup/
