@@ -108,6 +108,22 @@ User and language configuration:
 @.moai/config/sections/user.yaml
 @.moai/config/sections/language.yaml
 
+### Project-local imports (re-apply after `moai update`)
+
+Agentic Development Pipeline Guideline:
+
+@development_pipeline_guideline.md
+
+Global Tacit Knowledge (Core Skills) — referenced by `development_pipeline_guideline.md` Section 1 as the global tacit-knowledge ruleset bound to this pipeline:
+
+@core-skills/CLAUDE_TACIT_KNOWLEDGE.md
+@core-skills/prevent-supply-chain-attack.md
+@core-skills/CONTRIBUTING.md
+
+Recommended Workflow Chains — MoAI selects the chain (new feature / bug fix / refactoring / docs update) that fits the current work:
+
+@core-skills/RECOMMEND_WORKFLOW_CHAIN.md
+
 MoAI-ADK uses Claude Code's official rules system at `.claude/rules/moai/` (core / workflow / development / language / design categories). Design System Configuration lives in `.moai/config/sections/{design,constitution,harness}.yaml`, `.moai/project/brand/`, `.moai/config/evaluator-profiles/`; legacy `.agency/` archived via `moai migrate agency`. Language rules: user responses in `conversation_language`; internal agent comms + Commands/Agents/Skills instructions always English; code comments per `code_comments` (default English); memory files always English (`moai-memory.md` § Rules).
 
 ---
@@ -196,6 +212,7 @@ The two work types below MUST NEVER be merged into one stage:
 - [HARD] No Stage 3 edit for any item lacking an explicit founder verdict. Unanswered flags stay open — never auto-resolve, never mark "resolved" because the cycle ran smoothly.
 - [HARD] Zero Stage 2 flags ≠ clean document. Treat zero-flag output as "this model may have missed", not "pass". For the first several SPECs, the founder runs a parallel manual review to calibrate; missed patterns are fed back into the spec-interrogator prompt.
 - Local extension marker: plan-auditor's Group 9 (numbered 7 before the v3 template took Groups 7 and 8) and the REQ ↔ Scenario Coverage Map live inside `<!-- LOCAL-EXT spec-review-pipeline -->` markers in `.claude/agents/moai/plan-auditor.md`. After any `moai update`, grep for that marker and re-apply the extensions if they were overwritten.
+- Project-local imports: §9 "Project-local imports" carries the `@development_pipeline_guideline.md` and four `@core-skills/*.md` imports. The v3 template does not ship them, so `moai update` drops them silently (it happened in #11). After any `moai update`, run `grep -c '^@core-skills/' CLAUDE.md` (expect 4) and re-apply the block if it is missing.
 
 ---
 
