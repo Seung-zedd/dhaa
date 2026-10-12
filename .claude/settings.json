@@ -8,7 +8,7 @@
   },
   "cleanupPeriodDays": 30,
   "disableBypassPermissionsMode": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "enableAllProjectMcpServers": false,
   "env": {
     "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1",
