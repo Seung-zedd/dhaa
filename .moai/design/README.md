@@ -8,7 +8,7 @@ copy, design tokens, and frontend code.
 
 When `/moai design` runs, the following files are automatically attached in priority order:
 
-**Auto-load priority**: `spec.md > system.md > research.md > pencil-plan.md`
+**Auto-load priority**: `spec.md > system.md > research.md`
 
 Files not in this list (e.g. `wireframes/`, `assets/`) are excluded from auto-attach.
 
@@ -19,7 +19,6 @@ Files not in this list (e.g. `wireframes/`, `assets/`) are excluded from auto-at
 | `research.md` | Competitor analysis, user insights, adopt/avoid patterns | YES |
 | `system.md` | Design tokens, typography, spacing, accessibility rules | YES |
 | `spec.md` | Information architecture, frame-by-frame spec | YES |
-| `pencil-plan.md` | Pencil MCP batch operation plan (optional) | YES |
 | `wireframes/` | PNG/SVG human reference images | YES |
 
 ## Reserved Filenames (Auto-generated — Do NOT Create Manually)
@@ -37,7 +36,7 @@ and `manager-spec`. Creating user files with these names causes `moai update` to
 
 ## Update Policy
 
-- **Human-authored files** (`research.md`, `system.md`, `spec.md`, `pencil-plan.md`):
+- **Human-authored files** (`research.md`, `system.md`, `spec.md`):
   `moai update` preserves user edits detected via SHA-256 hash mismatch.
 - **Auto-generated files** (`tokens.json`, `components.json`, etc.):
   Overwritten by import tools on each run. Do not edit manually.

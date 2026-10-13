@@ -84,7 +84,7 @@ security promises.
 
 ## 3. Stage 1 — what PRD cross-validation may and may not conclude
 
-plan-auditor gains PRD checks (Group 8, inside `LOCAL-EXT` markers). It may report a
+plan-auditor gains PRD checks (Group 10, inside `LOCAL-EXT` markers). It may report a
 **mechanical** defect only when all of these hold:
 
 1. The PRD statement is in the CURRENT region (section 2.1)
