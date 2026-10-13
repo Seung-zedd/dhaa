@@ -110,19 +110,15 @@ User and language configuration:
 
 ### Project-local imports (re-apply after `moai update`)
 
-Agentic Development Pipeline Guideline:
+These project documents are deliberately NOT `@`-imported: an import loads in full at every launch and counts toward the combined instruction-size limit. Read one by path when its topic comes up:
 
-@development_pipeline_guideline.md
+- `development_pipeline_guideline.md` — agentic pipeline guideline (app init, `moai update` procedure)
+- `core-skills/CLAUDE_TACIT_KNOWLEDGE.md` — orchestration tacit knowledge
+- `core-skills/prevent-supply-chain-attack.md` — package-install safety guide
+- `core-skills/CONTRIBUTING.md` — branching and commit conventions
+- `core-skills/RECOMMEND_WORKFLOW_CHAIN.md` — `/moai` command chains per work type
 
-Global Tacit Knowledge (Core Skills) — referenced by `development_pipeline_guideline.md` Section 1 as the global tacit-knowledge ruleset bound to this pipeline:
-
-@core-skills/CLAUDE_TACIT_KNOWLEDGE.md
-@core-skills/prevent-supply-chain-attack.md
-@core-skills/CONTRIBUTING.md
-
-Recommended Workflow Chains — MoAI selects the chain (new feature / bug fix / refactoring / docs update) that fits the current work:
-
-@core-skills/RECOMMEND_WORKFLOW_CHAIN.md
+Two rules from the guideline stay in force without the import: after `/moai plan`, tell the user to read every document in `.moai/specs/<SPEC-ID>/` (`spec.md`, `plan.md`, `acceptance.md`) and to request corrections before `/moai run`; run `moai update` only on a dedicated branch and land it by PR (details: guideline, stage 1).
 
 MoAI-ADK uses Claude Code's official rules system at `.claude/rules/moai/` (core / workflow / development / language / design categories). Design System Configuration lives in `.moai/config/sections/{design,constitution,harness}.yaml`, `.moai/project/brand/`, `.moai/config/evaluator-profiles/`; legacy `.agency/` archived via `moai migrate agency`. Language rules: user responses in `conversation_language`; internal agent comms + Commands/Agents/Skills instructions always English; code comments per `code_comments` (default English); memory files always English (`moai-memory.md` § Rules).
 
@@ -216,7 +212,7 @@ Authority runs `PRD.md` -> spec -> acceptance -> plan -> code; `spec-compact.md`
 - [HARD] No AI recommendation reaches the founder before their independent judgment. Analysis is produced only for flags the founder marks `NEED_ANALYSIS`, a recommendation only on `REQUEST_RECOMMENDATION`. Routing a flag away from founder attention requires an exact cited authority — an LLM "best practice" is not one.
 - [HARD] A product-level verdict (scope, phase, tier behaviour, user-visible UX, brand, pricing, privacy) reconciles PRD and SPEC together, strictly within what the founder confirmed. SPEC-only application recreates the drift this pipeline exists to catch.
 - Local extension marker: plan-auditor's Group 9 (cross-document consistency; numbered 7 before the v3 template took Groups 7 and 8), Group 10 (PRD cross-validation), and the REQ ↔ Scenario Coverage Map live inside `<!-- LOCAL-EXT spec-review-pipeline -->` markers in `.claude/agents/moai/plan-auditor.md`. After any `moai update`, grep for that marker and re-apply the extensions if they were overwritten.
-- Project-local imports: §9 "Project-local imports" carries the `@development_pipeline_guideline.md` and four `@core-skills/*.md` imports. The v3 template does not ship them, so `moai update` drops them silently (it happened in #11). After any `moai update`, run `grep -c '^@core-skills/' CLAUDE.md` (expect 4) and re-apply the block if it is missing.
+- Project-local imports: §9 "Project-local imports" lists `development_pipeline_guideline.md` and four `core-skills/*.md` files as plain pointers, deliberately not `@`-imported (instruction-size limit). After any `moai update`, run `grep -c -E '^@(core-skills/|development_pipeline_guideline)' CLAUDE.md` (expect 0); a non-zero count means the update re-introduced the imports, so convert them back to pointers.
 
 ---
 
