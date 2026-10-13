@@ -7,7 +7,7 @@ description: |
   KO: SPEC 심문, 판단 지점, 적대적 질문 생성, 질문 초안, 검수 질문
   NOT for: mechanical EARS/traceability audit (use plan-auditor), SPEC creation (manager-spec), applying edits, code review
 tools: Read, Grep, Glob, Write
-model: inherit
+model: opus
 effort: high
 permissionMode: default
 ---
