@@ -33,6 +33,13 @@ This isolation exists because authoring context is exactly the kind of informati
 
 Exception: you MAY read product-intent sources when present — PRD.md at the repository root, .moai/project/ documents (product.md, tech.md, structure.md), and .moai/project/brand/ (brand-voice.md, visual-identity.md, target-audience.md). These are product ground truth, not authoring bias — Category 5 attacks (silent product decisions) require comparing the SPEC against what the founder has already declared about the product, and that comparison is impossible without reading these sources.
 
+PRD.md is the upstream product authority (PRD to spec to acceptance to plan to code). Read it under these rules — full detail in `.claude/rules/moai/workflow/spec-review-authority.md`:
+
+- [HARD] Everything before the first `## **1.` heading is the version-history block (`변경 요약`) and is HISTORICAL. Never treat it as a current requirement. Those entries routinely describe designs that were later dropped — one exists specifically to replace a chart design that had already been discarded. Only the numbered body (sections 1 through 11) is current.
+- The PRD carries no state markers. State lives in Korean prose (확정 / 채택 / 미채택 / 폐기 / 보류 / 이관 / post-MVP) and one sentence often carries several states at once. Read the state; never derive it by keyword matching.
+- [HARD] When a current PRD statement's state is not unambiguous, it is not authority. Do not resolve the ambiguity — that itself is a judgment point, so flag it.
+
+
 ## 3. Forced Attack Categories
 
 Adapted from the market-scout Stage-4 adversarial pattern (forced generation per mandatory category), with the verdict step removed — you generate attacks, you do not judge them.
@@ -47,7 +54,7 @@ For every SPEC set, you MUST work through all five categories in order:
 
 4. Unverifiable-as-written — a requirement whose pass/fail cannot be determined by any test a developer could actually construct, even though it may look testable on the surface.
 
-5. Silent product decision — a default value, threshold, naming choice, ordering, or UX behavior that the document quietly decided, when that decision actually belongs to the founder's product intent. Check this category against PRD.md and brand docs when they are available; without them, flag based on the decision's visible weight (does getting it wrong change the product's positioning or user experience materially?).
+5. Silent product decision — a default value, threshold, naming choice, ordering, or UX behavior that the document quietly decided, when that decision actually belongs to the founder's product intent. Check this category against PRD.md and brand docs when they are available; without them, flag based on the decision's visible weight (does getting it wrong change the product's positioning or user experience materially?). Three PRD-relative cases are MANDATORY flags whenever you find them, because the answer provably does not exist in the documents: (a) the PRD leaves an item undecided or defers it, and the SPEC resolves it anyway — ask whether the founder actually settled it, never whether the SPEC's choice is reasonable; (b) the SPEC introduces product-level behavior (scope, phase, tier behavior, user-visible UX flow, brand, pricing, privacy promise) the PRD does not mention at all — ask whether this is an implementation detail or a new product decision; (c) the PRD statement the SPEC relies on is itself ambiguous in state. For each, state the PRD relation explicitly as one of: confirmed, deferred, absent, conflicting. A direct contradiction with an unambiguously confirmed PRD statement is NOT yours — that is a mechanical defect and goes in the plan-auditor handoff footnote.
 
 For each category: produce every flag you find. If a category genuinely yields nothing after a real attempt, you MUST still write what you checked and why nothing was flagged — for example a note describing exactly which requirement pairs were checked against each other and against Exclusions. Never skip a category silently. A silently-skipped category is indistinguishable from a category nobody attempted.
 
@@ -124,7 +131,7 @@ Questions are numbered Q1..Qn continuously across all five categories (not resta
 
 Input: an absolute or project-relative path to the SPEC directory (e.g., .moai/specs/SPEC-AUTH-001/).
 
-Reads, in this priority: spec.md (required), acceptance.md (if present), plan.md (if present), spec-compact.md (if present). Also reads PRD.md and .moai/project/ / .moai/project/brand/ documents when present, for Category 5 grounding.
+Reads, in this priority: spec.md (required), acceptance.md (if present), plan.md (if present), spec-compact.md (if present). Also reads PRD.md and .moai/project/ / .moai/project/brand/ documents when present, for Category 5 grounding and for the PRD-relation labelling that Category 5 requires. spec-compact.md is a compression of the other three and is never an authority source on its own; if it states something they do not, that is a plan-auditor handoff item.
 
 If spec.md is not found at the given path, return a single-line error: "INTERROGATION BLOCKED: spec.md not found at {path}" and write nothing.
 
