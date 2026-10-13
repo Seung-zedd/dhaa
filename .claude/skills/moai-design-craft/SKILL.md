@@ -95,7 +95,7 @@ When expert-frontend or team-designer generates web pages, apply copy craft rule
 ## Works Well With
 
 - `moai-domain-uiux` — Design tokens, WCAG, accessibility (complementary, not overlapping)
-- `moai-design-tools` — Figma/Pencil tool mechanics (complementary, not overlapping)
+- `moai-design-tools` — Figma tool mechanics (complementary, not overlapping)
 - `moai-domain-frontend` — Component implementation patterns
 
 ---

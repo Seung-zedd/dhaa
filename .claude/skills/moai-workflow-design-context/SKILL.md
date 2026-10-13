@@ -1,18 +1,18 @@
 ---
 name: moai-workflow-design-context
 description: >
-  Loads human-authored design briefs from .moai/design/ (research, system, spec,
-  pencil-plan) and injects them into /moai design workflow context with priority
-  truncation when token budget is exceeded.
+  Loads human-authored design briefs from .moai/design/ (research, system, spec)
+  and injects them into /moai design workflow context with priority truncation
+  when token budget is exceeded.
 license: Apache-2.0
 compatibility: Designed for Claude Code
 allowed-tools: Read, Grep, Glob
 user-invocable: false
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   category: "workflow"
   status: "active"
-  updated: "2026-04-20"
+  updated: "2026-10-11"
   tags: "design, context, attach, auto-load, brand, design-brief"
 
 progressive_disclosure:
@@ -40,19 +40,18 @@ standalone with an explicit `dir` argument.
 
 ## Quick Reference
 
-Priority order (REQ-2, AC-4): `spec > system > research > pencil-plan`
+Priority order (REQ-2, AC-4): `spec > system > research`
 
 Bare-token to filename mapping:
 - `spec` → `.moai/design/spec.md`
 - `system` → `.moai/design/system.md`
 - `research` → `.moai/design/research.md`
-- `pencil-plan` → `.moai/design/pencil-plan.md`
 
 Token budget default: `20000` (from `design.yaml design_docs.token_budget`)
 
 Token estimation algorithm (REQ-5): `estimated_tokens = ceiling(char_count / 4) * 1.10`
 
-Truncation order when over budget (REVERSE priority): drop `pencil-plan` first, then `research`, then `system`; always preserve `spec`.
+Truncation order when over budget (REVERSE priority): drop `research` first, then `system`; always preserve `spec`.
 
 ---
 
@@ -71,7 +70,7 @@ Defaults:
 - `dir`: `.moai/design`
 - `auto_load_on_design_command`: `true`
 - `token_budget`: `20000`
-- `priority`: `[spec, system, research, pencil-plan]`
+- `priority`: `[spec, system, research]`
 
 If invoked standalone with an explicit `dir` argument, override `dir` with the
 provided value. All Read tool calls must target paths under `<dir>/`, not the
@@ -107,11 +106,10 @@ Issue all Read tool calls for candidate files as a **single batched parallel
 tool-call set** in the same orchestration turn. The candidates are the bare tokens
 from the priority array, mapped to `<dir>/<token>.md`.
 
-Example parallel Read calls (four files, one turn):
+Example parallel Read calls (three files, one turn):
 - Read `<dir>/spec.md`
 - Read `<dir>/system.md`
 - Read `<dir>/research.md`
-- Read `<dir>/pencil-plan.md`
 
 If a file does not exist, treat as not present (not an error). If a file cannot be
 read due to a permission error or corruption, add the token name to the warnings
@@ -147,8 +145,8 @@ Include files in priority order (`spec` first) until the cumulative
 
 When adding the next file would exceed the budget:
 
-1. Drop the **lowest-priority** candidate first (REVERSE priority: `pencil-plan`
-   before `research` before `system`; never drop `spec`).
+1. Drop the **lowest-priority** candidate first (REVERSE priority: `research`
+   before `system`; never drop `spec`).
 2. Retry with remaining files.
 3. If a **single file alone** exceeds the remaining budget after all higher-priority
    files are included, truncate that file at the nearest `##` or `###` section
@@ -260,4 +258,4 @@ output.
 
 REQ coverage: REQ-1 through REQ-16
 SPEC: SPEC-DESIGN-ATTACH-001
-Version: 1.0.0
+Version: 1.1.0 (pencil-plan removed — vendor-agnostic design docs)
