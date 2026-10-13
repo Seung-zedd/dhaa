@@ -144,6 +144,16 @@
           }
         ],
         "matcher": "Write|Edit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/lint-on-edit.js\"",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
       }
     ],
     "PostToolUseFailure": [
@@ -200,6 +210,16 @@
           }
         ],
         "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-env-edit.js\"",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
       }
     ],
     "SessionEnd": [
@@ -231,6 +251,15 @@
           {
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/moai/handle-stop.sh\"",
             "timeout": 5,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/show-changed-files-on-stop.js\"",
+            "timeout": 10,
             "type": "command"
           }
         ]
