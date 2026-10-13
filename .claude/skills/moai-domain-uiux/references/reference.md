@@ -138,11 +138,6 @@ Comprehensive collection of official documentation, specifications, and resource
 
 ## Design-to-Code Tools
 
-### Pencil MCP
-- Documentation: https://docs.pencil.dev
-- Server Setup: Auto-starts with Pencil IDE extension or desktop app
-- Use Case: Design-as-Code with .pen files, design token management, component code generation
-
 ### Storybook 8.x
 - Documentation: https://storybook.js.org/docs
 - React: https://storybook.js.org/docs/react/get-started/introduction

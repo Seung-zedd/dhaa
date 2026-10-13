@@ -393,11 +393,9 @@ Tailwind CSS v4 introduces a CSS-first configuration approach. Key changes from 
 
 ## Nova Preset
 
-The Nova preset is a shadcn/ui-based design system preset available via Pencil MCP. It uses Hugeicons as the default icon library and provides pre-built component themes.
+The Nova preset is a shadcn/ui-based design system preset. It uses Hugeicons as the default icon library and provides pre-built component themes.
 
-For Nova preset details and .pen file workflows, see the moai-design-tools skill:
-- reference/pencil-renderer.md — Pencil DNA rendering and Nova configuration
-- reference/pencil-code.md — Code export from Nova designs
+For Nova preset configuration, see the moai-design-tools skill (Default Design Style section).
 
 ---
 
