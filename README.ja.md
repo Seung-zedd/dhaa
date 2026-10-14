@@ -149,17 +149,22 @@ main
 
 現在の環境では引き続き **Claude Code + MoAI-ADK** を使用しています。ただし、これは最終architectureではなく、abstraction boundaryを見つけるための最初のreference implementationです。
 
-| Layer | 継承 | 内容 |
-|---|---|---|
-| **Claude Code layer** | ✅ 子directoryへ継承 | `CLAUDE.md`、`.claude/` agents/skills/rules/hooks/commands、`/moai` commands |
-| **`moai` binary layer** | ❌ local `.moai/`のみ | status/loop/fix/quality gates。各appにlocal `.moai/`が必要 |
+各appは、このrepositoryの特定version tagのsnapshotを丸ごと持つ **独立したGit repository** です。appを収める上位folder(例: `projects/`)にはengineを置きません。
 
-この2-layer model自体も、将来的にはDHAA-level contractとadapterの背後にあるimplementation detailとして分離する予定です。
+| 場所 | 内容 |
+|---|---|
+| **dhaa repository** | engineの原本。`moai update`とengineの変更はbranch + PRでのみ反映し、version tagを付ける |
+| **app folder** | tag snapshot(`CLAUDE.md`、`.claude/`、`.moai/`、`core-skills/`) + app code + `PRD.md`。独自のGit履歴を持つ |
+| **上位container** | app folderのみを収める。`CLAUDE.md`・`.claude/` engineはない |
+
+上位containerにengineを置き、子appがそれを継承する2-layer modelはもう使いません。Claude Codeは上位folderの`CLAUDE.md`も読み込むため、独自のengineを持つappが同じcontainerにあると同じ指示が二重に読み込まれます。
+
+この自己完結型model自体も、将来的にはDHAA-level contractとadapterの背後にあるimplementation detailとして分離する予定です。
 
 ## Repository Layout
 
 ```text
-projects/
+dhaa/
 ├── CLAUDE.md
 ├── development_pipeline_guideline.md
 ├── core-skills/
@@ -167,8 +172,7 @@ projects/
 ├── .moai/
 ├── .mcp.json
 ├── pkg-supply-chain-check.sh
-├── skills-lock.json
-└── (app folders)
+└── skills-lock.json
 ```
 
 将来的には次のようなDHAA-owned領域を検証します。
@@ -192,9 +196,11 @@ projects/
 現在のreference implementationではGit、Git Bash、Node.js、pnpm、gh CLI、moai binary、Claude Code CLIを使用します。
 
 ```bash
-git clone git@github.com:Seung-zedd/dhaa.git projects
-cd projects
+git clone git@github.com:Seung-zedd/dhaa.git
+cd dhaa
 ```
+
+このcloneはengineの変更とversion tagの管理に使います。app開発は以下のように別folderで行います。
 
 Claude Code/MoAI-ADK固有の設定は、abstractionの進展に伴いimplementation-specific documentへ分離する予定です。
 
@@ -203,12 +209,16 @@ Claude Code/MoAI-ADK固有の設定は、abstractionの進展に伴いimplementa
 > 現在のClaude Code + MoAI-ADK reference implementation向けです。
 
 ```bash
-moai init my-new-app
+git clone --depth 1 --branch <tag> git@github.com:Seung-zedd/dhaa.git my-new-app   # 例: v0.1.0
 cd my-new-app
-rm CLAUDE.md
-rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
+rm -rf .git docs/wiki README.md README.en.md README.ja.md README.zh.md
+git init
 moai cc
 ```
+
+- `moai init`は実行しません。snapshotに`.moai/config`と`.claude/settings.json`がすでに含まれています。
+- `LICENSE`と`THIRD_PARTY_NOTICES.md`は残します(MoAI-ADK Apache License 2.0の告知)。
+- sessionを開く前に`PRD.md`をappのrootに置きます。詳しい手順とtroubleshootingは`development_pipeline_guideline.md`の1段階を参照してください。
 
 現在のMoAI workflowは `/moai project → plan → run → loop/fix → sync` ですが、これは安定したDHAA APIではなく一つの **orchestration reference** です。
 

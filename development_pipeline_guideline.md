@@ -6,7 +6,7 @@
 
 1. **글로벌 암묵지 룰셋 (Core Skills)**:
 
-> 해당 마크다운 파일들은 "C:\Users\username\projects\core-skills" 폴더에 있으므로 참고해서 그대로 플러그인 할 것.
+> 해당 마크다운 파일들은 앱 루트의 `core-skills/` 폴더(dhaa 스냅샷에 포함, 아래 1단계 참고)에 있으므로 참고해서 그대로 플러그인 할 것.
 
 - `skills/CLAUDE_TACIT_KNOWLEDGE.md` (Diff 중심의 토큰 최소화 기법으로 쿼터 방어)
 - `skills/prevent-supply-chain-attack.md` (백엔드 공급망 공격 및 보안 취약점 차단)
@@ -31,34 +31,44 @@
 
 ### [1단계] 개발 환경 초기화 및 기획 문서 주입 (Initialization & PRD Seeding)
 
-> **[워크스페이스 상속 모델 — 필독]**
-> `C:\Users\username\projects\`는 **개별 프로젝트가 아니라 공유 MoAI 엔진을 담은 워크스페이스 컨테이너**다. 여기에 이미 `moai init`이 되어 있어 `CLAUDE.md` + `.claude/`(에이전트 24개·스킬·룰·훅) + `.moai/config`가 설치돼 있다.
-> Claude Code는 **하위 폴더에서 세션을 열면 상위의 `CLAUDE.md`와 `.claude/` 엔진을 자동 상속**한다(검증됨: 하위 프로젝트의 `.claude/`가 비어 있어도 풀 MoAI가 로드됨). 반면 **`moai` 바이너리(status·loop·fix·quality gate)는 상속하지 않고 로컬 `.moai/`만 본다**(검증됨: 로컬 `.moai/` 없는 폴더는 "Not initialized"로 뜸).
-> 따라서 **레이어를 분리**한다 — 무거운 지시문/엔진(`CLAUDE.md`, `.claude/`)은 컨테이너에서 **상속**받고, 바이너리가 필요로 하는 `.moai/`만 앱마다 **로컬**로 둔다. 이렇게 하면 `CLAUDE.md`(약 29K) 중복 로드로 인한 컨텍스트 bloat가 사라진다.
+> **[앱별 자체 완결형 모델 — 필독] (2026-10-14 개정)**
+> `C:\Users\username\projects\`는 **엔진 없이 앱 저장소만 담는 컨테이너**다. 여기에는 `CLAUDE.md`·`.claude/` 엔진을 두지 않는다. 대신 각 앱이 이 레포(dhaa)의 스냅샷을 통째로 가진다 — `CLAUDE.md` + `.claude/`(에이전트·스킬·룰·훅·`settings.json`) + `.moai/config`가 앱 루트에 모두 들어 있다.
+> 이전에는 컨테이너에 엔진을 두고 하위 앱이 상속받는 2-layer 모델을 썼다. 그러나 Claude Code는 상위 폴더의 `CLAUDE.md`도 함께 로드하므로, 엔진을 따로 가진 앱(예: pillwriter)이 같은 컨테이너에 있으면 `CLAUDE.md`(약 29K)가 두 번 로드된다. 그래서 컨테이너에서 엔진을 걷어내고 앱마다 한 벌씩만 두는 방식으로 바꿨다.
+> 각 앱은 **독립 Git 저장소**다. dhaa를 클론한 그대로 쓰면 `origin`이 dhaa를 가리키고 dhaa 커밋 이력 위에 앱 커밋이 쌓이므로, 반드시 `.git`을 지우고 `git init`을 새로 한다.
 
 - **명령어 (신규 앱 생성 시)**:
-  1. `moai init my-new-app` — 앱 폴더 + 스캐폴딩 생성. **목적은 오직 로컬 `.moai/`(config·specs·loop 상태) 확보**. (컨테이너 `projects/`는 이미 초기화돼 있으니 재-init 금지)
-  2. **중복 제거 (bloat 방지, 핵심 단계)**: 방금 생성된 앱 폴더 안에서 상위로부터 상속되는 무거운 복제본을 삭제한다.
-     - `rm CLAUDE.md` (상위 `projects/CLAUDE.md`가 커버 — 이걸 지워야 29K 중복 로드가 사라짐)
-     - `rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles` (엔진은 상위에서 상속)
-     - **`.claude/hooks`는 절대 삭제 금지 (SPEC-확인됨, 2026-07-05 트러블슈팅)**: `.claude/settings.json`(로컬 유지 대상)의 `SessionStart` 등 각종 훅 항목이 `$CLAUDE_PROJECT_DIR/.claude/hooks/moai/*.sh`를 **상대경로로 직접 참조**한다. `.claude/hooks`는 `CLAUDE.md`/`.claude` 엔진과 달리 상위 `projects/`에서 자동 상속되지 않으므로, 이 폴더를 지우면 세션 시작마다 `SessionStart:startup hook error`(`No such file or directory`)가 non-blocking으로 발생한다. 이 훅 실패는 세션 자체를 막지는 않지만 그 여파로 **ccstatusline 상태줄이 통째로 렌더링되지 않는 증상**으로 이어진다("상태줄이 안 뜬다"의 실제 근본 원인 중 하나 — 아래 statusLine 진단 순서보다 먼저 확인할 것). 만약 실수로 삭제했다면 `cp -r projects/.claude/hooks/. my-new-app/.claude/hooks/`로 복구한다.
-     - **유지**: `.moai/`(바이너리 필수), `.claude/settings*.json`, `.claude/hooks`(위 이유로 필수), `.gitignore`, `.mcp.json`
-     - **statusLine 고정 (ccstatusline 통일, 핵심 단계)**: `moai init`은 매번 `.moai/status_line.sh`(bash 래퍼)를 생성하고 `.claude/settings.json`의 `statusLine.command`가 이를 가리키도록 설정한다. 그러나 이 bash 래퍼는 **Windows Claude Code 셸에서 실행되지 않아 상태줄이 아예 뜨지 않는다**. 따라서 앱마다 컨테이너 `projects/`·글로벌과 동일하게 맞춘다:
-       - `.claude/settings.json`의 `statusLine` 블록을 `{"type":"command","command":"npx -y ccstatusline@latest","padding":0,"refreshInterval":10}`로 교체
-       - `rm .moai/status_line.sh` (더 이상 참조하지 않음)
-       - **이유**: `settings.json`은 `CLAUDE.md`/`.claude` 엔진과 달리 **상속되지 않고 로컬(앱 폴더)이 우선**하므로, 앱마다 직접 고정하지 않으면 상위의 ccstatusline 설정이 적용되지 않는다. `npx` 명령은 Windows에서도 정상 동작한다.
-       - **[필독] 설정 수정 후 반드시 세션 재시작**: `statusLine` 블록은 **세션 시작 시점에만 로드되고 실행 중에는 핫리로드되지 않는다.** 따라서 이미 열려 있는 세션에서 `settings.json`을 고쳐도 상태줄은 그대로 안 뜬다 — 파일이 올바르게 고쳐져 있어도 화면에 반영되려면 세션을 한 번 종료 후 재시작(`/exit` → `moai cc`)해야 한다. **"상태줄이 안 뜬다"는 증상의 1순위 원인은 설정 오류가 아니라 이 세션 미리로드다.** 진단 순서: (1) `.claude/settings.json`의 `statusLine.command`가 `npx -y ccstatusline@latest`인지 확인 → (2) 해당 앱 폴더에서 `echo '{"model":{"display_name":"Opus 5"}}' | npx -y ccstatusline@latest` 로 명령 자체가 출력을 내는지 확인 → (3) 둘 다 정상인데 화면에 없으면 **세션 재시작**이 해답 → (4) 그래도 안 뜨면 `settings.json`의 `env.PATH`(아래 제3원인 항목)를 점검하고, 마지막으로 `~/.config/ccstatusline/` 전역 설정 충돌을 의심한다.
-       - **[필독] 제3의 근본 원인 — env.PATH에 Node.js 누락 (확인됨, 2026-07-05 pillwriter 트러블슈팅)**: `.claude/settings.json`의 `env.PATH` 오버라이드에 Node.js/npm 경로가 빠져 있으면, Claude Code가 statusLine 서브프로세스에 이 PATH를 주입하므로 `npx -y ccstatusline@latest`가 `npx: command not found`(exit 127)로 죽어 상태줄이 **0바이트 출력 → 아예 렌더링되지 않는다**. `npx`는 `C:\Program Files\nodejs`와 `C:\Users\username\AppData\Roaming\npm`에만 존재한다. 같은 PATH 문제의 부수 피해로 `moai.exe`도 해석 불가가 되어 26개 moai 훅 래퍼가 **에러 없이 조용히 no-op** 된다(MoAI 컨텍스트 주입 소실 — SessionStart는 exit 0으로 성공처럼 보임). 해결: 앱 `settings.json`의 `env.PATH`를 컨테이너 `projects/.claude/settings.json`의 검증된 값(`C:\Users\username\AppData\Roaming\npm;C:\Users\username\AppData\Local\Programs\moai;…`로 시작, `/c/Program Files/nodejs` 포함)으로 교체 후 세션 재시작. 진단 시 함정: 터미널에서 직접 돌리는 위 (2)번 테스트는 터미널의 온전한 PATH를 쓰므로 이 원인을 **놓친다** — 반드시 `settings.json`의 PATH 값을 환경변수로 넣고 **새 bash.exe를 스폰**해 테스트한다(이미 실행 중인 bash 안에서 `env PATH=...`로 덮으면 Windows 형식 PATH가 MSYS 변환되지 않아 가짜 음성이 나온다).
-     - 주의: `moai update`는 템플릿을 다시 밀어넣으므로, 업데이트는 앱이 아니라 **컨테이너 `projects/`에서만** 수행한다. (앱에서 `moai update` 실행 시 `.moai/status_line.sh`와 엔진 복제본이 다시 생성되므로, 실행했다면 위 statusLine 고정·중복 제거를 재수행한다.)
-       - **[필독] 이 레포(dhaa)에서 `moai update`는 main에서 직접 실행하지 않고 전용 브랜치 + PR로만 반영한다 (2026-10-13 개정)**: 2026-10-11 moai-adk 3.1.2 dry-run 당시 이 레포는 v2로 감지되어 **clean reinstall**이 계획됐다 — 관리 경로 파일 431개 삭제 후 229개만 재배포, 나머지(에이전트 다수, `moai-workflow-design-context`, `moai-design-tools` 등)는 복원 없이 삭제. 이 결과를 PR #11(`chore/moai-v3-update`)에서 수동 검토하고 로컬 확장(CLAUDE.md §18, plan-auditor `LOCAL-EXT`)을 다시 적용한 뒤 v3.1.2 템플릿으로 전환했다. 업데이트는 vendor-agnostic 정리(Pencil 제거)를 되돌리고, 파일 안의 `LOCAL-EXT` 같은 마커로는 막을 수 없다(바이너리가 마커를 인식하지 않고 파일 단위로 삭제·교체함; `.moai/config`만 3-way merge로 보존). 따라서 다음 업데이트도: (1) 전용 브랜치에서 먼저 커밋 → (2) `moai update --dry-run`으로 계획 확인 → (3) 실행 후 `git status`/`git diff`로 전체 검토하고 원치 않는 변경은 `git restore` → (4) `git grep -i pencil` 결과가 변경 이력·버전 표기 줄뿐인지 확인한다. 특히 `.moai/config/sections/design.yaml`의 `design_docs.priority`에 `pencil-plan`이 다시 들어오는지 확인할 것 — 블록 위치가 바뀌면 머지 충돌로 잡히지 않고 조용히 되살아난다(PR #11에서 실제로 발생).
-  3. *(수동 작업)*: 기존에 빌드된 구글 독스 기반의 **`PRD.md`** 파일을 앱 폴더 루트에 배치
-  4. **앱 폴더에서 Claude Code 세션을 연다**: 터미널에서 `cd my-new-app && moai cc` (`moai cc`가 Claude Code를 현재 폴더 기준으로 실행 → `$CLAUDE_PROJECT_DIR`가 앱을 가리켜 SPEC·리포트가 **앱 로컬 `.moai/`에** 쌓인다)
-  5. 세션 안에서 `/moai project [프로젝트명]` 실행 (예: `/moai project 스마트 디톡스`)
+  1. **dhaa 스냅샷 가져오기**: dhaa 버전 태그를 기준으로 복사하고 이력은 끊는다.
+     ```bash
+     cd C:/Users/username/projects
+     git clone --depth 1 --branch <tag> git@github.com:Seung-zedd/dhaa.git my-new-app   # 예: <tag> = v0.1.0
+     cd my-new-app
+     rm -rf .git
+     git init
+     ```
+     - 태그를 지정해야 앱이 어느 dhaa 버전에서 출발했는지 남는다. 첫 커밋 메시지에 출처를 적는다(예: `⚙️ chore: bootstrap from dhaa v0.1.0`).
+  2. **dhaa 전용 문서 삭제**: 엔진이 아니라 dhaa 프로젝트 자체를 설명하는 파일만 지운다.
+     - `rm README.md README.en.md README.ja.md README.zh.md` (앱 README는 따로 작성)
+     - `rm -rf docs/wiki` (dhaa 실험 기록)
+     - **유지**: `LICENSE`, `THIRD_PARTY_NOTICES.md` — MoAI-ADK(Apache License 2.0) 자료가 함께 들어오므로 고지를 같이 둔다.
+  3. **`moai init`은 실행하지 않는다**: 스냅샷에 `.moai/config`가 이미 들어 있어서 바이너리가 초기화된 프로젝트로 인식한다(검증됨, 2026-10-14: `git archive`로 복사한 폴더에서 `moai status` → `Status: Initialized`, `project.name`은 빈 값). `moai init`을 다시 돌리면 `.moai/status_line.sh`가 생성되고 `settings.json`의 `statusLine`이 이 파일을 가리키도록 바뀌므로, 실행했다면 아래 트러블슈팅의 statusLine 항목대로 되돌린다.
+  4. **머신별 설정 확인**: 스냅샷의 `.claude/settings.json`에는 statusLine(`npx -y ccstatusline@latest`)과 검증된 `env.PATH`가 이미 들어 있다. 다만 `env.PATH`에는 사용자 경로(`C:\Users\<사용자명>\...`)가 하드코딩돼 있으므로, 다른 머신이나 다른 계정에서는 이 경로부터 고친다(아래 트러블슈팅의 env.PATH 항목 참고).
+  5. *(수동 작업)*: 기존에 빌드된 구글 독스 기반의 **`PRD.md`** 파일을 앱 폴더 루트에 배치
+  6. **앱 폴더에서 Claude Code 세션을 연다**: 터미널에서 `cd my-new-app && moai cc` (`moai cc`가 Claude Code를 현재 폴더 기준으로 실행 → `$CLAUDE_PROJECT_DIR`가 앱을 가리켜 SPEC·리포트가 **앱 로컬 `.moai/`에** 쌓인다)
+  7. 세션 안에서 `/moai project [프로젝트명]` 실행 (예: `/moai project 스마트 디톡스`)
+- **엔진 업데이트 (`moai update`)**:
+  - `moai update`는 앱이 아니라 **dhaa 레포에서만** 실행한다. 앱에서 실행하면 템플릿이 다시 밀려 들어와 로컬 수정(statusLine, CLAUDE.md §18, plan-auditor `LOCAL-EXT` 등)을 덮어쓴다.
+  - **[필독] 이 레포(dhaa)에서 `moai update`는 main에서 직접 실행하지 않고 전용 브랜치 + PR로만 반영한다 (2026-10-13 개정)**: 2026-10-11 moai-adk 3.1.2 dry-run 당시 이 레포는 v2로 감지되어 **clean reinstall**이 계획됐다 — 관리 경로 파일 431개 삭제 후 229개만 재배포, 나머지(에이전트 다수, `moai-workflow-design-context`, `moai-design-tools` 등)는 복원 없이 삭제. 이 결과를 PR #11(`chore/moai-v3-update`)에서 수동 검토하고 로컬 확장(CLAUDE.md §18, plan-auditor `LOCAL-EXT`)을 다시 적용한 뒤 v3.1.2 템플릿으로 전환했다. 업데이트는 vendor-agnostic 정리(Pencil 제거)를 되돌리고, 파일 안의 `LOCAL-EXT` 같은 마커로는 막을 수 없다(바이너리가 마커를 인식하지 않고 파일 단위로 삭제·교체함; `.moai/config`만 3-way merge로 보존). 따라서 다음 업데이트도: (1) 전용 브랜치에서 먼저 커밋 → (2) `moai update --dry-run`으로 계획 확인 → (3) 실행 후 `git status`/`git diff`로 전체 검토하고 원치 않는 변경은 `git restore` → (4) `git grep -i pencil` 결과가 변경 이력·버전 표기 줄뿐인지 확인한다. 특히 `.moai/config/sections/design.yaml`의 `design_docs.priority`에 `pencil-plan`이 다시 들어오는지 확인할 것 — 블록 위치가 바뀌면 머지 충돌로 잡히지 않고 조용히 되살아난다(PR #11에서 실제로 발생).
+  - **앱에 반영**: dhaa에 새 버전 태그를 붙인 뒤, 앱의 전용 브랜치에서 엔진 경로(`CLAUDE.md`, `.claude/agents`, `.claude/skills`, `.claude/rules`, `.claude/hooks`, `.claude/commands`, `.claude/output-styles`, `core-skills/`)를 새 태그 기준으로 다시 복사한다. `.claude/settings.json`과 `.moai/config/`는 앱에서 바꾼 값(`env.PATH`, `project.name` 등)이 있으므로 통째로 덮어쓰지 말고 `git diff`로 비교해 필요한 항목만 옮긴다. `.moai/specs/` 등 앱이 만든 산출물은 건드리지 않는다.
+- **트러블슈팅 — 상태줄·훅이 안 뜰 때**: 스냅샷에는 올바른 값이 들어 있으므로, 주로 파일을 지웠거나 앱에서 `moai init`/`moai update`를 돌렸을 때 생긴다.
+  - **`.claude/hooks`는 절대 삭제 금지 (SPEC-확인됨, 2026-07-05 트러블슈팅)**: `.claude/settings.json`의 `SessionStart` 등 각종 훅 항목이 `$CLAUDE_PROJECT_DIR/.claude/hooks/moai/*.sh`를 **상대경로로 직접 참조**한다. 이 폴더가 없으면 세션 시작마다 `SessionStart:startup hook error`(`No such file or directory`)가 non-blocking으로 발생한다. 이 훅 실패는 세션 자체를 막지는 않지만 그 여파로 **ccstatusline 상태줄이 통째로 렌더링되지 않는 증상**으로 이어진다("상태줄이 안 뜬다"의 실제 근본 원인 중 하나 — 아래 statusLine 진단 순서보다 먼저 확인할 것). 실수로 삭제했다면 같은 태그의 dhaa에서 `.claude/hooks/`를 다시 복사한다.
+  - **statusLine (ccstatusline 통일)**: `.claude/settings.json`의 `statusLine` 블록이 `{"type":"command","command":"npx -y ccstatusline@latest","padding":0,"refreshInterval":10}`인지 확인한다. `moai init`이 만드는 `.moai/status_line.sh`(bash 래퍼)는 **Windows Claude Code 셸에서 실행되지 않아 상태줄이 아예 뜨지 않으므로**, `statusLine.command`가 이 파일을 가리키고 있으면 위 값으로 교체하고 `rm .moai/status_line.sh`로 지운다. `settings.json`은 상위 폴더에서 상속되지 않고 **앱 로컬 값이 적용**된다.
+  - **[필독] 설정 수정 후 반드시 세션 재시작**: `statusLine` 블록은 **세션 시작 시점에만 로드되고 실행 중에는 핫리로드되지 않는다.** 따라서 이미 열려 있는 세션에서 `settings.json`을 고쳐도 상태줄은 그대로 안 뜬다 — 파일이 올바르게 고쳐져 있어도 화면에 반영되려면 세션을 한 번 종료 후 재시작(`/exit` → `moai cc`)해야 한다. **"상태줄이 안 뜬다"는 증상의 1순위 원인은 설정 오류가 아니라 이 세션 미리로드다.** 진단 순서: (1) `.claude/settings.json`의 `statusLine.command`가 `npx -y ccstatusline@latest`인지 확인 → (2) 해당 앱 폴더에서 `echo '{"model":{"display_name":"Opus 5"}}' | npx -y ccstatusline@latest` 로 명령 자체가 출력을 내는지 확인 → (3) 둘 다 정상인데 화면에 없으면 **세션 재시작**이 해답 → (4) 그래도 안 뜨면 `settings.json`의 `env.PATH`(아래 제3원인 항목)를 점검하고, 마지막으로 `~/.config/ccstatusline/` 전역 설정 충돌을 의심한다.
+  - **[필독] 제3의 근본 원인 — env.PATH에 Node.js 누락 (확인됨, 2026-07-05 pillwriter 트러블슈팅)**: `.claude/settings.json`의 `env.PATH` 오버라이드에 Node.js/npm 경로가 빠져 있으면, Claude Code가 statusLine 서브프로세스에 이 PATH를 주입하므로 `npx -y ccstatusline@latest`가 `npx: command not found`(exit 127)로 죽어 상태줄이 **0바이트 출력 → 아예 렌더링되지 않는다**. `npx`는 `C:\Program Files\nodejs`와 `C:\Users\username\AppData\Roaming\npm`에만 존재한다. 같은 PATH 문제의 부수 피해로 `moai.exe`도 해석 불가가 되어 26개 moai 훅 래퍼가 **에러 없이 조용히 no-op** 된다(MoAI 컨텍스트 주입 소실 — SessionStart는 exit 0으로 성공처럼 보임). 해결: 앱 `settings.json`의 `env.PATH`를 dhaa `.claude/settings.json`의 검증된 값에서 사용자명만 바꾼 값(`C:\Users\username\AppData\Roaming\npm;C:\Users\username\AppData\Local\Programs\moai;…`로 시작, `/c/Program Files/nodejs` 포함)으로 교체 후 세션 재시작. 진단 시 함정: 터미널에서 직접 돌리는 위 (2)번 테스트는 터미널의 온전한 PATH를 쓰므로 이 원인을 **놓친다** — 반드시 `settings.json`의 PATH 값을 환경변수로 넣고 **새 bash.exe를 스폰**해 테스트한다(이미 실행 중인 bash 안에서 `env PATH=...`로 덮으면 Windows 형식 PATH가 MSYS 변환되지 않아 가짜 음성이 나온다).
 - **용어 주의 — 바이너리 vs 슬래시 명령**:
   - **터미널 바이너리**: `moai init`, `moai update`, `moai status`, `moai cc/cg/glm`(Claude Code 실행)
   - **Claude Code 내부 슬래시 명령**: `/moai project`, `/moai plan`, `/moai run`, `/moai loop`, `/moai fix`, `/moai sync` — 이하 2~5단계의 `moai xxx` 표기는 전부 세션 안에서 실행하는 **`/moai` 슬래시 명령**이다(동일 이름의 바이너리 서브명령은 존재하지 않음).
 - **동작**:
-  - `moai init`은 오케스트레이션 엔진이 아니라 **로컬 `.moai/` 샌드박스만** 확보하기 위한 것이다(엔진은 상속). `PRD.md`를 앱 루트에 넣어 에이전트에게 기획 콘텍스트를 선제 주입한다.
+  - 앱 하나가 엔진과 로컬 `.moai/`를 모두 가진 자체 완결형이므로, 세션은 상위 컨테이너 설정에 의존하지 않는다. `PRD.md`를 앱 루트에 넣어 에이전트에게 기획 콘텍스트를 선제 주입한다.
   - 에이전트는 주입된 `PRD.md`를 기반으로 아키텍처 진입점과 디렉토리 구조(PID)를 자율 수립하되, 명세가 모호하거나 누락된 섹션에 대해서만 Charmbracelet(`huh`/`bubbletea`) 인터랙티브 인터뷰를 주동하여 스펙을 정교하게 최종 구체화한다.
   - 이후 모든 산출물(SPEC, 리포트, loop 스냅샷)은 세션을 연 앱 폴더의 로컬 `.moai/`에 격리 저장되어 프로젝트 간 혼선이 없다.
 
