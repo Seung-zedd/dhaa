@@ -173,19 +173,24 @@ main
 
 현재 실험 환경은 여전히 **Claude Code + MoAI-ADK**를 사용합니다. 다만 이 조합은 DHAA의 최종 architecture가 아니라, abstraction boundary를 검증하기 위한 첫 번째 reference implementation입니다.
 
-### 현재 2-layer workspace 모델
+### 현재 앱별 자체 완결형 workspace 모델
 
-| 레이어 | 상속 여부 | 내용 |
-|--------|-----------|------|
-| **Claude Code 레이어** | ✅ 하위 폴더로 자동 상속 | `CLAUDE.md`, `.claude/`(agents/skills/rules/hooks/commands), `/moai` 슬래시 명령 |
-| **`moai` 바이너리 레이어** | ❌ 로컬 `.moai/`만 인식 | `moai status`/`loop`/`fix`/quality gate — 앱마다 로컬 `.moai/` 필요 |
+각 앱은 이 레포의 특정 버전 태그 스냅샷을 통째로 가진 **독립 Git 저장소**입니다. 앱을 담는 상위 폴더(예: `projects/`)에는 엔진을 두지 않습니다.
+
+| 위치 | 내용 |
+|------|------|
+| **dhaa 레포** | 엔진 원본. `moai update`와 엔진 수정은 여기서 브랜치 + PR로만 반영하고 버전 태그를 붙임 |
+| **앱 폴더** | 태그 스냅샷(`CLAUDE.md`, `.claude/`, `.moai/`, `core-skills/`) + 앱 코드 + `PRD.md`, 자체 Git 이력 |
+| **상위 컨테이너** | 앱 폴더만 담음. `CLAUDE.md`·`.claude/` 엔진 없음 |
+
+엔진을 상위 컨테이너에 두고 하위 앱이 상속받는 2-layer 모델은 더 이상 쓰지 않습니다. Claude Code가 상위 폴더의 `CLAUDE.md`도 함께 로드하기 때문에, 엔진을 따로 가진 앱이 같은 컨테이너에 있으면 같은 지시문이 두 번 로드됩니다.
 
 이 구조 자체도 향후 Claude Code / MoAI-ADK implementation detail로 격리하고, DHAA-level contract와 adapter layer를 별도로 정의할 예정입니다.
 
 ## 레포 구성
 
 ```text
-projects/
+dhaa/
 ├── CLAUDE.md
 ├── development_pipeline_guideline.md
 ├── core-skills/
@@ -193,8 +198,7 @@ projects/
 ├── .moai/
 ├── .mcp.json
 ├── pkg-supply-chain-check.sh
-├── skills-lock.json
-└── (app folders)
+└── skills-lock.json
 ```
 
 향후에는 다음과 같은 DHAA-owned 영역을 분리하는 방향을 실험할 예정입니다.
@@ -225,9 +229,11 @@ projects/
 - Claude Code CLI
 
 ```bash
-git clone git@github.com:Seung-zedd/dhaa.git projects
-cd projects
+git clone git@github.com:Seung-zedd/dhaa.git
+cd dhaa
 ```
+
+이 클론은 엔진을 수정하고 버전 태그를 관리하는 용도입니다. 앱 개발은 아래처럼 별도 폴더에서 합니다.
 
 현재 reference environment에는 Claude Code와 MoAI-ADK 전용 설정이 포함되어 있으며, 향후 abstraction이 진행되면 implementation-specific 문서로 분리할 예정입니다.
 
@@ -236,12 +242,16 @@ cd projects
 > 현재 Claude Code + MoAI-ADK reference implementation 기준입니다.
 
 ```bash
-moai init my-new-app
+git clone --depth 1 --branch <tag> git@github.com:Seung-zedd/dhaa.git my-new-app   # 예: v0.1.0
 cd my-new-app
-rm CLAUDE.md
-rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
+rm -rf .git docs/wiki README.md README.en.md README.ja.md README.zh.md
+git init
 moai cc
 ```
+
+- `moai init`은 실행하지 않습니다. 스냅샷에 `.moai/config`와 `.claude/settings.json`이 이미 들어 있습니다.
+- `LICENSE`와 `THIRD_PARTY_NOTICES.md`는 남깁니다(MoAI-ADK Apache License 2.0 고지).
+- `PRD.md`를 앱 루트에 두고 세션을 엽니다. 자세한 절차와 트러블슈팅은 `development_pipeline_guideline.md` 1단계를 참고하세요.
 
 현재 MoAI workflow 예시:
 

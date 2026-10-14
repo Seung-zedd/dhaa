@@ -149,17 +149,22 @@ main
 
 当前环境仍然使用 **Claude Code + MoAI-ADK**，但这只是用于发现 abstraction boundary 的第一个 reference implementation，而不是 DHAA 的最终 architecture。
 
-| Layer | 是否继承 | 内容 |
-|---|---|---|
-| **Claude Code layer** | ✅ 子目录继承 | `CLAUDE.md`、`.claude/` agents/skills/rules/hooks/commands、`/moai` commands |
-| **`moai` binary layer** | ❌ 仅 local `.moai/` | status/loop/fix/quality gates；每个 app 需要 local `.moai/` |
+每个 app 都是一个**独立的 Git repository**，完整保存本仓库某个 version tag 的 snapshot。存放 app 的上级目录（例如 `projects/`）不放置 engine。
 
-这个 two-layer model 本身也计划被隔离为 DHAA-level contract 与 adapter 背后的 implementation detail。
+| 位置 | 内容 |
+|---|---|
+| **dhaa repository** | engine 源头。`moai update` 和 engine 修改只通过 branch + PR 合入，并打上 version tag |
+| **app 目录** | tag snapshot（`CLAUDE.md`、`.claude/`、`.moai/`、`core-skills/`）+ app 代码 + `PRD.md`，拥有自己的 Git 历史 |
+| **上级 container** | 只存放 app 目录，没有 `CLAUDE.md`、`.claude/` engine |
+
+不再使用由上级 container 安装 engine、子 app 继承的 two-layer model。Claude Code 也会加载上级目录中的 `CLAUDE.md`，因此自带 engine 的 app 若放在这样的 container 中，同一份指令会被加载两次。
+
+这个自包含 model 本身也计划被隔离为 DHAA-level contract 与 adapter 背后的 implementation detail。
 
 ## Repository Layout
 
 ```text
-projects/
+dhaa/
 ├── CLAUDE.md
 ├── development_pipeline_guideline.md
 ├── core-skills/
@@ -167,8 +172,7 @@ projects/
 ├── .moai/
 ├── .mcp.json
 ├── pkg-supply-chain-check.sh
-├── skills-lock.json
-└── (app folders)
+└── skills-lock.json
 ```
 
 未来可能演进为如下 DHAA-owned 区域：
@@ -192,9 +196,11 @@ projects/
 当前 reference implementation 使用 Git、Git Bash、Node.js、pnpm、gh CLI、moai binary 和 Claude Code CLI。
 
 ```bash
-git clone git@github.com:Seung-zedd/dhaa.git projects
-cd projects
+git clone git@github.com:Seung-zedd/dhaa.git
+cd dhaa
 ```
+
+这个 clone 用于修改 engine 和管理 version tag。app 开发如下所示在单独的目录中进行。
 
 随着 abstraction 推进，Claude Code/MoAI-ADK 专用设置将逐步移动到 implementation-specific 文档中。
 
@@ -203,12 +209,16 @@ cd projects
 > 以下仅适用于当前 Claude Code + MoAI-ADK reference implementation。
 
 ```bash
-moai init my-new-app
+git clone --depth 1 --branch <tag> git@github.com:Seung-zedd/dhaa.git my-new-app   # 例如 v0.1.0
 cd my-new-app
-rm CLAUDE.md
-rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
+rm -rf .git docs/wiki README.md README.en.md README.ja.md README.zh.md
+git init
 moai cc
 ```
+
+- 不要运行 `moai init`。snapshot 中已经包含 `.moai/config` 和 `.claude/settings.json`。
+- 保留 `LICENSE` 和 `THIRD_PARTY_NOTICES.md`（MoAI-ADK Apache License 2.0 声明）。
+- 打开 session 之前，将 `PRD.md` 放在 app 根目录。完整步骤与 troubleshooting 请参阅 `development_pipeline_guideline.md` 第 1 阶段。
 
 当前 MoAI workflow 为 `/moai project → plan → run → loop/fix → sync`，它只是一个 **orchestration reference**，不是稳定的 DHAA API。
 

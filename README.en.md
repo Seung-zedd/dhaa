@@ -153,17 +153,22 @@ Existing Claude-specific work in feature branches can remain until PR time, when
 
 The current environment still uses **Claude Code + MoAI-ADK**. This is the first reference implementation for discovering abstraction boundaries, not DHAA's final architecture.
 
-| Layer | Inherited? | Description |
-|---|---|---|
-| **Claude Code layer** | ✅ inherited by child directories | `CLAUDE.md`, `.claude/` agents/skills/rules/hooks/commands, `/moai` slash commands |
-| **`moai` binary layer** | ❌ only local `.moai/` is recognized | status/loop/fix/quality gates; each app requires a local `.moai/` |
+Each application is an **independent Git repository** that carries a full snapshot of this repository at a version tag. The parent folder that holds applications (e.g. `projects/`) carries no engine.
 
-This two-layer model is itself expected to become an implementation detail behind DHAA-level contracts and adapters.
+| Location | Contents |
+|---|---|
+| **dhaa repository** | Engine source. `moai update` and engine changes land here through a branch + PR only, and releases get a version tag |
+| **Application folder** | Tag snapshot (`CLAUDE.md`, `.claude/`, `.moai/`, `core-skills/`) + application code + `PRD.md`, with its own Git history |
+| **Parent container** | Holds application folders only; no `CLAUDE.md` or `.claude/` engine |
+
+The earlier two-layer model, where child applications inherited an engine installed in the parent container, is no longer used. Claude Code also loads `CLAUDE.md` from parent directories, so an application that carries its own engine inside such a container loads the same instructions twice.
+
+This self-contained model is itself expected to become an implementation detail behind DHAA-level contracts and adapters.
 
 ## Repository Layout
 
 ```text
-projects/
+dhaa/
 ├── CLAUDE.md
 ├── development_pipeline_guideline.md
 ├── core-skills/
@@ -171,8 +176,7 @@ projects/
 ├── .moai/
 ├── .mcp.json
 ├── pkg-supply-chain-check.sh
-├── skills-lock.json
-└── (app folders)
+└── skills-lock.json
 ```
 
 A future DHAA-owned area may evolve toward:
@@ -203,9 +207,11 @@ Current reference implementation requirements:
 - Claude Code CLI
 
 ```bash
-git clone git@github.com:Seung-zedd/dhaa.git projects
-cd projects
+git clone git@github.com:Seung-zedd/dhaa.git
+cd dhaa
 ```
+
+This clone is for changing the engine and managing version tags. Application work happens in a separate folder, as shown below.
 
 Claude Code and MoAI-ADK-specific setup is currently part of the reference environment and is expected to move into implementation-specific documentation as abstraction progresses.
 
@@ -214,12 +220,16 @@ Claude Code and MoAI-ADK-specific setup is currently part of the reference envir
 > Current Claude Code + MoAI-ADK reference implementation only.
 
 ```bash
-moai init my-new-app
+git clone --depth 1 --branch <tag> git@github.com:Seung-zedd/dhaa.git my-new-app   # e.g. v0.1.0
 cd my-new-app
-rm CLAUDE.md
-rm -rf .claude/agents .claude/skills .claude/commands .claude/rules .claude/output-styles
+rm -rf .git docs/wiki README.md README.en.md README.ja.md README.zh.md
+git init
 moai cc
 ```
+
+- Do not run `moai init`; the snapshot already includes `.moai/config` and `.claude/settings.json`.
+- Keep `LICENSE` and `THIRD_PARTY_NOTICES.md` (MoAI-ADK Apache License 2.0 notice).
+- Place `PRD.md` at the application root before opening the session. See stage 1 of `development_pipeline_guideline.md` for the full procedure and troubleshooting.
 
 Current MoAI workflow example:
 
