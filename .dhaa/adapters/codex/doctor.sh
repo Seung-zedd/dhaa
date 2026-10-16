@@ -37,6 +37,8 @@ check_cmd moai
 check_file AGENTS.md
 check_file .dhaa/constitution/core.md
 check_file .dhaa/adapters/codex/SKILL.md
+check_file .dhaa/runtime/checkpoint.sh
+check_file .dhaa/runtime/recover.sh
 check_file .agents/skills/dhaa/SKILL.md
 check_file .codex/hooks.json
 check_file .codex/config.toml
@@ -65,6 +67,33 @@ if [[ -f "$repo_root/.codex/hooks.json" ]]; then
   fi
 fi
 
+for script in \
+  "$repo_root/.dhaa/adapters/codex/bootstrap.sh" \
+  "$repo_root/.dhaa/adapters/codex/doctor.sh" \
+  "$repo_root/.dhaa/runtime/checkpoint.sh" \
+  "$repo_root/.dhaa/runtime/recover.sh"; do
+  if [[ -f "$script" ]]; then
+    if bash -n "$script"; then
+      ok "bash syntax: ${script#"$repo_root"/}"
+    else
+      bad "bash syntax: ${script#"$repo_root"/}"
+    fi
+  fi
+done
+
+if [[ -f "$repo_root/.claude/settings.json" ]]; then
+  if grep -q '"matcher": "rate_limit|overloaded|' "$repo_root/.claude/settings.json"; then
+    ok "Claude StopFailure matcher includes overloaded"
+  else
+    warn "Claude StopFailure matcher does not appear to include overloaded"
+  fi
+  if grep -q '.dhaa/runtime/checkpoint.sh' "$repo_root/.claude/settings.json"; then
+    ok "Claude turn/failure checkpoint hook is wired"
+  else
+    warn "Claude checkpoint hook is not wired"
+  fi
+fi
+
 if command -v moai >/dev/null 2>&1; then
   if moai tool enable codex --help >/dev/null 2>&1; then
     ok "MoAI additive Codex wiring command is available"
@@ -82,6 +111,7 @@ fi
 echo
 echo "Capability note: DHAA Codex adapter intentionally assumes no subagent spawn."
 echo "Independent-review steps must use an available MoAI audit/role surface or be reported as 'independence: degraded'."
+echo "Recovery: use '$dhaa resume' in Codex, or 'bash .dhaa/runtime/recover.sh' from Git Bash."
 echo "After wiring changes, verify/re-trust project hooks from Codex's /hooks UI when required."
 
 if (( fail != 0 )); then
