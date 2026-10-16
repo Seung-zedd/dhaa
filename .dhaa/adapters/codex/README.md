@@ -51,13 +51,13 @@ From the application/DHAA snapshot root:
 
 ```bash
 # 1. Preview only — no writes
-.dhaa/adapters/codex/bootstrap.sh
+bash .dhaa/adapters/codex/bootstrap.sh
 
 # 2. Apply Codex wiring + install the local $dhaa skill
-.dhaa/adapters/codex/bootstrap.sh --apply
+bash .dhaa/adapters/codex/bootstrap.sh --apply
 
 # 3. Diagnose
-.dhaa/adapters/codex/doctor.sh
+bash .dhaa/adapters/codex/doctor.sh
 ```
 
 The bootstrap intentionally refuses to fall back to `moai init --force` or a broad `moai update`. DHAA snapshots can carry local template changes, so a missing additive Codex command must be resolved in the DHAA engine's normal update branch/review process.
@@ -83,6 +83,7 @@ Then use the adapter skill:
 $dhaa plan "implement crawling source registration"
 $dhaa run SPEC-XXX
 $dhaa sync SPEC-XXX
+$dhaa resume
 ```
 
 Natural-language requests are also supported by the dispatcher, but explicit subcommands are useful while validating parity.
@@ -103,6 +104,34 @@ Loaded only when relevant:
 - code and project docs needed by the current task
 
 This is meant to reduce avoidable context bloat. It is not a claim that Codex will always consume fewer tokens than Claude Code; compare the same real work in both harnesses and measure completion quality, context/usage, and wall-clock time.
+
+## Crash / quota failover
+
+DHAA adds a model-free local checkpoint at `.moai/state/dhaa-recovery.md`. It records branch/HEAD, working-tree summaries, and the tail of the newest `progress.md` candidate without asking a model to summarize the session.
+
+The Claude reference path refreshes that checkpoint on normal `Stop` and on `StopFailure`, including `overloaded` (the error class used for provider-overload/529-style failures), rate limits, server errors, and output-limit failures. Because the checkpoint is produced by a shell script, it does not require a successful final model response.
+
+Manual checkpoint:
+
+```bash
+bash .dhaa/runtime/checkpoint.sh --reason manual
+```
+
+Recovery bundle:
+
+```bash
+bash .dhaa/runtime/recover.sh
+```
+
+Or from Codex:
+
+```text
+$dhaa resume
+```
+
+Recovery order is: current MoAI handoff (verify preconditions) -> exact SPEC `progress.md` -> live Git state -> local checkpoint -> project requirement entry points. The newest `progress.md` by mtime is only a candidate. An interrupted model/tool turn is considered incomplete unless repository/tool evidence proves completion.
+
+The checkpoint is under `.moai/state/`, so it is intentionally machine-local and ignored by Git. Cross-machine continuity should rely on durable SPEC/progress/project artifacts plus any explicitly shared/committed state.
 
 ## Switching harnesses
 
