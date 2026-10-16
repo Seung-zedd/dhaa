@@ -263,6 +263,15 @@
             "type": "command"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.dhaa/runtime/checkpoint.sh\" --reason turn-complete --quiet >/dev/null 2>&1 || true",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
       }
     ],
     "StopFailure": [
@@ -272,9 +281,14 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/moai/handle-stop-failure.sh\"",
             "timeout": 5,
             "type": "command"
+          },
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.dhaa/runtime/checkpoint.sh\" --reason stop-failure --quiet >/dev/null 2>&1 || true",
+            "timeout": 5,
+            "type": "command"
           }
         ],
-        "matcher": "rate_limit|authentication_failed|billing_error|max_output_tokens"
+        "matcher": "rate_limit|overloaded|authentication_failed|oauth_org_not_allowed|billing_error|invalid_request|model_not_found|server_error|max_output_tokens|unknown"
       }
     ],
     "SubagentStart": [
