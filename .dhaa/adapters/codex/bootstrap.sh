@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: .dhaa/adapters/codex/bootstrap.sh [--apply]
+Usage: bash .dhaa/adapters/codex/bootstrap.sh [--apply]
 
 Default: preview only. No files are written.
 --apply: enable MoAI Codex wiring and install the local DHAA Codex skill.
@@ -83,7 +83,7 @@ echo "  target: $installed_skill"
 if [[ "$apply" != true ]]; then
   echo
   echo "Preview complete. Nothing was written."
-  echo "Run '.dhaa/adapters/codex/bootstrap.sh --apply' to apply."
+  echo "Run 'bash .dhaa/adapters/codex/bootstrap.sh --apply' to apply."
   exit 0
 fi
 
@@ -98,6 +98,6 @@ cp "$adapter_skill" "$installed_skill"
 echo
 echo "Codex adapter installed."
 echo "Next:"
-echo "  1. Run '.dhaa/adapters/codex/doctor.sh'"
+echo "  1. Run 'bash .dhaa/adapters/codex/doctor.sh'"
 echo "  2. Start with 'moai codex' (preferred) or your approved Codex CLI launcher"
 echo "  3. In Codex, use: \$dhaa plan <request>"
