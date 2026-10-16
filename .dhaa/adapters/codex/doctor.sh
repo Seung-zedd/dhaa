@@ -111,7 +111,7 @@ fi
 echo
 echo "Capability note: DHAA Codex adapter intentionally assumes no subagent spawn."
 echo "Independent-review steps must use an available MoAI audit/role surface or be reported as 'independence: degraded'."
-echo "Recovery: use '$dhaa resume' in Codex, or 'bash .dhaa/runtime/recover.sh' from Git Bash."
+echo "Recovery: use '\$dhaa resume' in Codex, or 'bash .dhaa/runtime/recover.sh' from Git Bash."
 echo "After wiring changes, verify/re-trust project hooks from Codex's /hooks UI when required."
 
 if (( fail != 0 )); then
