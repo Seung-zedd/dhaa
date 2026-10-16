@@ -47,6 +47,7 @@ Typical usage inside Codex CLI:
 $dhaa plan <request>
 $dhaa run SPEC-XXX
 $dhaa sync SPEC-XXX
+$dhaa resume
 ```
 
 The dispatcher loads only the selected workflow and its necessary references.
@@ -62,6 +63,12 @@ moai tool enable codex
 The DHAA bootstrap script previews that operation by default and applies it only with `--apply`.
 
 Do not hand-edit generated `.codex/hooks.json` or the MoAI-owned portions of `.codex/config.toml` during normal setup. Project-owned Codex configuration may coexist with those generated sections.
+
+## Failure recovery
+
+DHAA keeps a local model-free checkpoint at `.moai/state/dhaa-recovery.md`. The Claude adapter refreshes it on successful turn-end and on `StopFailure`; it is also writable manually with `bash .dhaa/runtime/checkpoint.sh --reason manual`.
+
+After a provider overload/529, quota exhaustion, or an interrupted harness session, use `$dhaa resume` / `$dhaa recover`. The adapter runs `bash .dhaa/runtime/recover.sh` and reconciles, in order: MoAI handoff, exact SPEC progress, live Git state, local checkpoint, and project requirements. Never assume the interrupted turn completed merely because it was attempted.
 
 ## Continuity
 
