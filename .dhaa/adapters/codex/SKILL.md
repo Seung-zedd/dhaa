@@ -33,6 +33,12 @@ If the first token is an explicit subcommand, route directly:
 | `harness`, `hrn` | `.claude/skills/moai/workflows/harness.md` |
 | `goal` | `.claude/skills/moai/workflows/goal.md` |
 | `todo`, `backlog` | `.claude/skills/moai/workflows/todo.md` |
+| `resume`, `recover` | DHAA recovery adapter (no Claude workflow preload) |
+| `checkpoint` | DHAA deterministic checkpoint writer |
+
+`resume` / `recover` are special adapter verbs. Run `bash .dhaa/runtime/recover.sh`, reconcile the emitted handoff/checkpoint/live Git state, identify the correct SPEC, then read only that SPEC's minimum required files before continuing. Treat the interrupted turn as incomplete unless repository/tool evidence proves otherwise.
+
+`checkpoint` is also adapter-local. Run `bash .dhaa/runtime/checkpoint.sh --reason manual` and report the written local state path; do not load a MoAI workflow file.
 
 For natural-language input, classify the whole request semantically. Prefer the narrowest matching workflow. If it is a clear development request with no narrower intent, execute the lifecycle as `plan -> run -> sync`, preserving any approval gates defined by the selected workflow.
 
@@ -71,6 +77,9 @@ Use repository artifacts as continuity state:
 - current Git branch/status/diff
 - project requirements/docs
 - existing reports and handoff artifacts
+- `.moai/state/dhaa-recovery.md` as a local, model-free crash/quota checkpoint
+
+For recovery, prefer this order: current MoAI handoff (after precondition verification) -> exact SPEC `progress.md` -> live Git state -> local recovery checkpoint -> project requirement entry points. A newest-by-mtime `progress.md` is only a candidate, never an active-SPEC assertion.
 
 Do not claim a test, build, audit, or completion that was not observed. Preserve the selected workflow's mechanical gates and record capability degradation instead of silently skipping it.
 
